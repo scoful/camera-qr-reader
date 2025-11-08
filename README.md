@@ -2,7 +2,7 @@
 
 一个基于 Next.js 的现代化二维码工具,支持PC摄像头扫码和二维码生成。
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/scoful/camera-qr-reader)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fscoful%2Fcamera-qr-reader&project-name=camera-qr-reader&repository-name=camera-qr-reader)
 
 ## ✨ 核心功能
 
@@ -116,7 +116,7 @@ camera-qr-reader/
 ## 📦 部署
 
 ### Vercel (推荐)
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/scoful/camera-qr-reader)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fscoful%2Fcamera-qr-reader&project-name=camera-qr-reader&repository-name=camera-qr-reader)
 
 ## 🙏 致谢
 
