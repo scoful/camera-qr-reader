@@ -1,5 +1,5 @@
-import { useRef } from "react";
 import { QRCodeSVG } from "qrcode.react";
+import { useRef } from "react";
 
 interface QrPreviewProps {
 	value: string;
@@ -50,38 +50,41 @@ export default function QrPreview({ value }: QrPreviewProps) {
 	};
 
 	return (
-		<div className="rounded-2xl bg-white/80 backdrop-blur-sm shadow-sm border border-gray-200/50 overflow-hidden flex flex-col">
+		<div className="flex flex-col overflow-hidden rounded-2xl border border-gray-200/50 bg-white/80 shadow-sm backdrop-blur-sm">
 			{/* 标题 */}
-			<div className="px-6 py-4 border-b border-gray-200/50 bg-gray-50/50 shrink-0">
-				<h2 className="font-bold text-xl text-gray-900">🎨 二维码预览</h2>
+			<div className="shrink-0 border-gray-200/50 border-b bg-gray-50/50 px-6 py-4">
+				<h2 className="font-bold text-gray-900 text-xl">🎨 二维码预览</h2>
 			</div>
 
 			{/* 内容 - flex-1 自动填充 */}
-			<div className="p-6 flex flex-col gap-6 flex-1 justify-center">
+			<div className="flex flex-1 flex-col justify-center gap-6 p-6">
 				{/* 二维码大图 */}
 				<div className="flex flex-col items-center gap-4">
-					<div className="p-6 bg-white rounded-xl border-2 border-gray-200 shadow-sm" ref={qrRef}>
+					<div
+						className="rounded-xl border-2 border-gray-200 bg-white p-6 shadow-sm"
+						ref={qrRef}
+					>
 						<QRCodeSVG
-							value={value}
-							size={280}
-							level="H"
-							includeMargin={true}
 							bgColor="#ffffff"
 							fgColor="#000000"
+							includeMargin={true}
+							level="H"
+							size={280}
+							value={value}
 						/>
 					</div>
 
 					{/* 按钮组 */}
-					<div className="w-full flex flex-col gap-2.5">
+					<div className="flex w-full flex-col gap-2.5">
 						<button
-							className="w-full rounded-lg bg-gradient-to-r from-green-600 to-green-500 px-6 py-3 font-semibold text-white transition-all hover:shadow-lg hover:scale-105 active:scale-95"
+							className="w-full rounded-lg bg-gradient-to-r from-green-600 to-green-500 px-6 py-3 font-semibold text-white transition-all hover:scale-105 hover:shadow-lg active:scale-95"
 							onClick={handleDownload}
 							type="button"
 						>
 							⬇️ 下载二维码
 						</button>
 						<button
-							className="w-full rounded-lg bg-blue-50 px-6 py-3 font-semibold text-blue-700 transition-all hover:bg-blue-100 active:scale-95 border border-blue-200"
+							className="w-full rounded-lg border border-blue-200 bg-blue-50 px-6 py-3 font-semibold text-blue-700 transition-all hover:bg-blue-100 active:scale-95"
 							onClick={handleCopy}
 							type="button"
 						>
@@ -91,12 +94,13 @@ export default function QrPreview({ value }: QrPreviewProps) {
 				</div>
 
 				{/* 显示内容 */}
-				<div className="p-4 bg-blue-50/50 rounded-lg border border-blue-200/50">
-					<p className="text-xs text-blue-600 font-medium mb-2">二维码内容:</p>
-					<p className="text-sm text-gray-800 break-all leading-relaxed">{value}</p>
+				<div className="rounded-lg border border-blue-200/50 bg-blue-50/50 p-4">
+					<p className="mb-2 font-medium text-blue-600 text-xs">二维码内容:</p>
+					<p className="break-all text-gray-800 text-sm leading-relaxed">
+						{value}
+					</p>
 				</div>
 			</div>
 		</div>
 	);
 }
-

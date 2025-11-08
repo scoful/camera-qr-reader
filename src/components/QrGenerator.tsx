@@ -1,5 +1,4 @@
-import { useState, useRef } from "react";
-import { QRCodeSVG } from "qrcode.react";
+import { useRef, useState } from "react";
 
 interface QrGeneratorProps {
 	onGenerate: (value: string) => void;
@@ -7,7 +6,7 @@ interface QrGeneratorProps {
 
 export default function QrGenerator({ onGenerate }: QrGeneratorProps) {
 	const [inputText, setInputText] = useState("");
-	const qrRef = useRef<HTMLDivElement>(null);
+	const _qrRef = useRef<HTMLDivElement>(null);
 
 	const handleGenerate = () => {
 		if (inputText.trim()) {
@@ -20,26 +19,30 @@ export default function QrGenerator({ onGenerate }: QrGeneratorProps) {
 	};
 
 	return (
-		<div className="w-full max-w-2xl flex flex-col justify-center gap-6">
+		<div className="flex w-full max-w-2xl flex-col justify-center gap-6">
 			{/* 输入区域 */}
 			<div>
-				<label className="block mb-3 text-sm font-semibold text-gray-700 flex items-center gap-2">
+				<label
+					className="mb-3 block flex items-center gap-2 font-semibold text-gray-700 text-sm"
+					htmlFor="qr-text-input"
+				>
 					<span className="text-lg">✍️</span>
 					输入文本或URL
 				</label>
 				<textarea
-					className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-gray-900 bg-white transition-all"
-					placeholder="输入要生成二维码的文本或链接..."
-					rows={10}
-					value={inputText}
+					className="w-full resize-none rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-gray-900 transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+					id="qr-text-input"
 					onChange={(e) => setInputText(e.target.value)}
 					onKeyDown={(e) => {
 						if (e.key === "Enter" && e.ctrlKey) {
 							handleGenerate();
 						}
 					}}
+					placeholder="输入要生成二维码的文本或链接..."
+					rows={10}
+					value={inputText}
 				/>
-				<p className="mt-2 text-xs text-gray-500 flex items-center gap-1">
+				<p className="mt-2 flex items-center gap-1 text-gray-500 text-xs">
 					<span>💡</span>
 					<span>提示: 按 Ctrl + Enter 快速生成</span>
 				</p>
@@ -48,7 +51,7 @@ export default function QrGenerator({ onGenerate }: QrGeneratorProps) {
 			{/* 按钮组 */}
 			<div className="flex gap-3">
 				<button
-					className="flex-1 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-8 py-3.5 font-semibold text-white transition-all hover:shadow-lg hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+					className="flex-1 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-8 py-3.5 font-semibold text-white transition-all hover:scale-105 hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
 					disabled={!inputText.trim()}
 					onClick={handleGenerate}
 					type="button"
@@ -68,4 +71,3 @@ export default function QrGenerator({ onGenerate }: QrGeneratorProps) {
 		</div>
 	);
 }
-

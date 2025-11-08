@@ -1,106 +1,110 @@
-import { useEffect, useRef } from "react";
 import {
+	type Html5QrcodeResult,
 	Html5QrcodeScanner,
 	Html5QrcodeScanType,
-	type Html5QrcodeResult,
 } from "html5-qrcode";
+import { useEffect, useRef } from "react";
 
 interface QrScannerProps {
-	onScanSuccess?: (decodedText: string, decodedResult: Html5QrcodeResult) => void;
+	onScanSuccess?: (
+		decodedText: string,
+		decodedResult: Html5QrcodeResult,
+	) => void;
 	onScannerReady?: (stopScanner: () => Promise<void>) => void;
 }
 
-export default function QrScanner({ onScanSuccess, onScannerReady }: QrScannerProps) {
+export default function QrScanner({
+	onScanSuccess,
+	onScannerReady,
+}: QrScannerProps) {
 	const scannerRef = useRef<Html5QrcodeScanner | null>(null);
 	const hasRendered = useRef(false);
 
 	// 保持最新的回调引用，避免因父组件重渲染导致重新初始化
-const onScanSuccessRef = useRef(onScanSuccess);
-useEffect(() => {
-	onScanSuccessRef.current = onScanSuccess;
-}, [onScanSuccess]);
+	const onScanSuccessRef = useRef(onScanSuccess);
+	useEffect(() => {
+		onScanSuccessRef.current = onScanSuccess;
+	}, [onScanSuccess]);
 
-useEffect(() => {
-	// 使用hasRendered标记防止严格模式下的双重渲染
-	if (hasRendered.current) {
-		console.log("⚠️ 已渲染过，跳过");
-		return;
-	}
-	hasRendered.current = true;
-
-	console.log("🚀 初始化扫描器");
-
-	const scanner = new Html5QrcodeScanner(
-		"qr-reader",
-		{
-			fps: 30,
-			// 动态设置扫描框为整个预览窗口的100%,最大化识别区域
-			qrbox: (viewfinderWidth, viewfinderHeight) => {
-				const edgePercentage = 1.0; // 使用100%的窗口大小
-				const minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
-				const qrboxSize = Math.floor(minEdgeSize * edgePercentage);
-				return {
-					width: qrboxSize,
-					height: qrboxSize,
-				};
-			},
-			formatsToSupport: [0], // 仅支持QR码
-			supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA], // 仅摄像头
-			rememberLastUsedCamera: true,
-			useBarCodeDetectorIfSupported: false, // 避免部分环境下原生BarcodeDetector兼容性问题
-		},
-		false, // verbose
-	);
-
-	scannerRef.current = scanner;
-
-	// 暴露停止方法给父组件
-	const stopScanner = async () => {
-		if (scannerRef.current) {
-			console.log("🛑 停止扫描器");
-			await scannerRef.current.clear();
-			scannerRef.current = null;
-
-			// 清理DOM残留
-			const readerElement = document.getElementById("qr-reader");
-			if (readerElement) {
-				readerElement.innerHTML = "";
-			}
+	useEffect(() => {
+		// 使用hasRendered标记防止严格模式下的双重渲染
+		if (hasRendered.current) {
+			console.log("⚠️ 已渲染过，跳过");
+			return;
 		}
-	};
+		hasRendered.current = true;
 
-	onScannerReady?.(stopScanner);
+		console.log("🚀 初始化扫描器");
 
-	scanner.render(
-		(decodedText, decodedResult) => {
-			console.log("✅ 扫码成功:", decodedText);
-			onScanSuccessRef.current?.(decodedText, decodedResult);
-			// 扫码成功后自动停止
-			stopScanner().catch(console.error);
-		},
-		() => {
-			// 静默处理扫描错误
-		},
-	);
+		const scanner = new Html5QrcodeScanner(
+			"qr-reader",
+			{
+				fps: 30,
+				// 动态设置扫描框为整个预览窗口的100%,最大化识别区域
+				qrbox: (viewfinderWidth, viewfinderHeight) => {
+					const edgePercentage = 1.0; // 使用100%的窗口大小
+					const minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
+					const qrboxSize = Math.floor(minEdgeSize * edgePercentage);
+					return {
+						width: qrboxSize,
+						height: qrboxSize,
+					};
+				},
+				formatsToSupport: [0], // 仅支持QR码
+				supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA], // 仅摄像头
+				rememberLastUsedCamera: true,
+				useBarCodeDetectorIfSupported: false, // 避免部分环境下原生BarcodeDetector兼容性问题
+			},
+			false, // verbose
+		);
 
-	// 清理函数
-	return () => {
-		console.log("🧹 清理扫描器");
-		hasRendered.current = false; // 重置标记，允许下次重新渲染
-		const currentScanner = scannerRef.current;
-		if (currentScanner) {
-			scannerRef.current = null;
-			currentScanner
-				.clear()
-				.catch((err) => {
+		scannerRef.current = scanner;
+
+		// 暴露停止方法给父组件
+		const stopScanner = async () => {
+			if (scannerRef.current) {
+				console.log("🛑 停止扫描器");
+				await scannerRef.current.clear();
+				scannerRef.current = null;
+
+				// 清理DOM残留
+				const readerElement = document.getElementById("qr-reader");
+				if (readerElement) {
+					readerElement.innerHTML = "";
+				}
+			}
+		};
+
+		onScannerReady?.(stopScanner);
+
+		scanner.render(
+			(decodedText, decodedResult) => {
+				console.log("✅ 扫码成功:", decodedText);
+				onScanSuccessRef.current?.(decodedText, decodedResult);
+				// 扫码成功后自动停止
+				stopScanner().catch(console.error);
+			},
+			() => {
+				// 静默处理扫描错误
+			},
+		);
+
+		// 清理函数
+		return () => {
+			console.log("🧹 清理扫描器");
+			hasRendered.current = false; // 重置标记，允许下次重新渲染
+			const currentScanner = scannerRef.current;
+			if (currentScanner) {
+				scannerRef.current = null;
+				currentScanner.clear().catch((err) => {
 					console.error("清理扫描器失败:", err);
 				});
-		}
-	};
-}, []);
+			}
+		};
+	}, [onScannerReady]);
 
 	return (
-		<div className="w-full max-w-lg h-full flex items-center justify-center">
+		<div className="flex h-full w-full max-w-lg items-center justify-center">
 			<style>{`
 				/* 容器样式 */
 				#qr-reader {
@@ -179,4 +183,3 @@ useEffect(() => {
 		</div>
 	);
 }
-
