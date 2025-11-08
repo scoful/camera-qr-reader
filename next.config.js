@@ -6,7 +6,7 @@ import "./src/env.js";
 
 /** @type {import("next").NextConfig} */
 const config = {
-	reactStrictMode: true,
+	reactStrictMode: false, // 关闭以避免开发模式下的双重渲染
 
 	/**
 	 * If you are using `appDir` then you must comment the below `i18n` config out.
