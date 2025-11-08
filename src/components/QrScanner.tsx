@@ -100,16 +100,14 @@ useEffect(() => {
 }, []);
 
 	return (
-		<div className="w-full max-w-lg">
+		<div className="w-full max-w-lg h-full flex items-center justify-center">
 			<style>{`
 				/* 容器样式 */
 				#qr-reader {
 					border: none !important;
-					background: white !important;
+					background: transparent !important;
 					border-radius: 16px !important;
-					padding: 24px !important;
-					box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1) !important;
-					border: 1px solid #e5e7eb !important;
+					padding: 0 !important;
 				}
 
 				/* 所有文本改为深色 */
@@ -117,22 +115,23 @@ useEffect(() => {
 					color: #1f2937 !important;
 				}
 
-				/* 按钮样式 - 现代蓝色 */
+				/* 按钮样式 - 现代渐变蓝色 */
 				#qr-reader button {
-					background-color: #3b82f6 !important;
+					background: linear-gradient(to right, #3b82f6, #2563eb) !important;
 					color: white !important;
 					border: none !important;
-					padding: 12px 24px !important;
-					border-radius: 12px !important;
+					padding: 10px 20px !important;
+					border-radius: 10px !important;
 					font-weight: 600 !important;
 					cursor: pointer !important;
-					margin: 8px 4px !important;
+					margin: 6px 3px !important;
 					transition: all 0.2s !important;
+					font-size: 14px !important;
 				}
 
 				#qr-reader button:hover {
-					background-color: #2563eb !important;
-					box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1) !important;
+					box-shadow: 0 8px 16px -4px rgb(59 130 246 / 0.4) !important;
+					transform: scale(1.05) !important;
 				}
 
 				/* 下拉框样式 - 现代白色 */
@@ -162,9 +161,10 @@ useEffect(() => {
 
 				/* 视频元素 */
 				#qr-reader video {
-					border-radius: 12px !important;
+					border-radius: 16px !important;
 					transform: scaleX(-1) !important; /* 水平翻转,消除镜像效果 */
-					box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1) !important;
+					box-shadow: 0 4px 12px -2px rgb(0 0 0 / 0.15) !important;
+					border: 2px solid #e5e7eb !important;
 				}
 
 				/* 标签和提示文本 */
