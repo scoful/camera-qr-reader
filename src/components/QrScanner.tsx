@@ -104,7 +104,7 @@ export default function QrScanner({
 	}, [onScannerReady]);
 
 	return (
-		<div className="flex h-full w-full max-w-lg items-center justify-center">
+		<div className="flex h-full w-full max-w-4xl items-center justify-center">
 			<style>{`
 				/* 容器样式 */
 				#qr-reader {
@@ -165,6 +165,8 @@ export default function QrScanner({
 
 				/* 视频元素 */
 				#qr-reader video {
+					min-width: 400px !important;
+					min-height: 300px !important;
 					border-radius: 16px !important;
 					transform: scaleX(-1) !important; /* 水平翻转,消除镜像效果 */
 					box-shadow: 0 4px 12px -2px rgb(0 0 0 / 0.15) !important;
