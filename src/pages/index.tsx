@@ -84,11 +84,21 @@ export default function Home() {
 								Tools
 							</span>
 						</h1>
-						{/* 版本号 - 右上角 */}
-						<div className="absolute top-6 right-6">
-							<span className="font-medium text-gray-400 text-xs">
+						{/* 版本号和GitHub链接 - 右上角 */}
+						<div className="absolute top-6 right-6 flex items-center gap-2 text-xs">
+							<span className="font-medium text-gray-400">
 								v{versionInfo.version}
 							</span>
+							<span className="text-gray-300">|</span>
+							<a
+								className="font-medium text-gray-400 transition-colors hover:text-blue-500"
+								href="https://github.com/scoful/camera-qr-reader"
+								rel="noopener noreferrer"
+								target="_blank"
+								title="View on GitHub"
+							>
+								GitHub ⭐
+							</a>
 						</div>
 					</div>
 
@@ -129,7 +139,53 @@ export default function Home() {
 							</div>
 
 							{/* 内容区域 - flex-1 自动填充 */}
-							<div className="flex flex-1 items-center justify-center p-8">
+							<div className="relative flex flex-1 items-center justify-center p-8">
+								{/* 帮助图标 - 右上角 */}
+								<div className="group absolute top-4 right-4 z-10">
+									<svg
+										aria-label="帮助提示"
+										className="h-5 w-5 cursor-help text-gray-400 transition-colors group-hover:text-blue-500"
+										fill="none"
+										role="img"
+										stroke="currentColor"
+										strokeWidth={2}
+										viewBox="0 0 24 24"
+									>
+										<title>帮助提示</title>
+										<path
+											d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+											strokeLinecap="round"
+											strokeLinejoin="round"
+										/>
+									</svg>
+									{/* 悬停提示 - 根据activeTab显示不同内容 */}
+									<div className="invisible absolute top-full right-0 z-20 mt-2 w-64 rounded-lg border border-gray-200 bg-white p-4 text-left text-gray-700 text-xs opacity-0 shadow-lg transition-all group-hover:visible group-hover:opacity-100">
+										{activeTab === "scan" ? (
+											<>
+												<div className="mb-2 font-semibold text-blue-600 text-sm">
+													📷 扫描功能
+												</div>
+												<ul className="space-y-1.5 text-gray-600">
+													<li>• 使用电脑摄像头实时扫描二维码</li>
+													<li>• 支持识别600+字符长URL</li>
+													<li>• 自动保存扫描历史记录</li>
+												</ul>
+											</>
+										) : (
+											<>
+												<div className="mb-2 font-semibold text-blue-600 text-sm">
+													🎨 生成功能
+												</div>
+												<ul className="space-y-1.5 text-gray-600">
+													<li>• 输入文本或URL生成二维码</li>
+													<li>• 快捷键: Ctrl + Enter 快速生成</li>
+													<li>• 支持下载为PNG图片</li>
+													<li>• 实时预览生成结果</li>
+												</ul>
+											</>
+										)}
+									</div>
+								</div>
 								{activeTab === "scan" ? (
 									// 扫描模式
 									isScanning ? (
@@ -251,6 +307,122 @@ export default function Home() {
 									</div>
 								</div>
 							)}
+						</div>
+					</div>
+
+					{/* 常用场景 */}
+					<div className="mt-6 rounded-2xl border border-gray-200/50 bg-white/80 p-6 shadow-sm backdrop-blur-sm">
+						<h2 className="mb-4 font-bold text-gray-900 text-lg">
+							💡 常用场景
+						</h2>
+						<div className="grid grid-cols-2 gap-6">
+							{/* 左侧: 手机传电脑 */}
+							<div className="rounded-xl border border-gray-200/50 bg-gradient-to-br from-blue-50/50 to-white p-5">
+								<h3 className="mb-4 flex items-center gap-2 font-bold text-base text-gray-900">
+									<span className="text-2xl">📱→💻</span>
+									手机传电脑
+								</h3>
+								<div className="space-y-3">
+									<div className="ml-4 flex items-start gap-3">
+										<span className="text-xl">📷</span>
+										<div className="flex-1">
+											<div className="font-semibold text-gray-900 text-sm">
+												扫描二维码
+											</div>
+											<div className="mt-0.5 text-gray-500 text-xs">
+												对准手机二维码扫描
+											</div>
+										</div>
+									</div>
+									<div className="ml-4 flex items-start gap-3">
+										<span className="text-xl">🔗</span>
+										<div className="flex-1">
+											<div className="font-semibold text-gray-900 text-sm">
+												打开网页
+											</div>
+											<div className="mt-0.5 text-gray-500 text-xs">
+												扫码快速访问链接
+											</div>
+										</div>
+									</div>
+									<div className="ml-4 flex items-start gap-3">
+										<span className="text-xl">📋</span>
+										<div className="flex-1">
+											<div className="font-semibold text-gray-900 text-sm">
+												复制文本
+											</div>
+											<div className="mt-0.5 text-gray-500 text-xs">
+												扫码自动复制内容
+											</div>
+										</div>
+									</div>
+									<div className="ml-4 flex items-start gap-3">
+										<span className="text-xl">📞</span>
+										<div className="flex-1">
+											<div className="font-semibold text-gray-900 text-sm">
+												拨打电话
+											</div>
+											<div className="mt-0.5 text-gray-500 text-xs">
+												扫码识别电话号码
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							{/* 右侧: 电脑传手机 */}
+							<div className="rounded-xl border border-gray-200/50 bg-gradient-to-br from-green-50/50 to-white p-5">
+								<h3 className="mb-4 flex items-center gap-2 font-bold text-base text-gray-900">
+									<span className="text-2xl">💻→📱</span>
+									电脑传手机
+								</h3>
+								<div className="space-y-3">
+									<div className="ml-4 flex items-start gap-3">
+										<span className="text-xl">🎨</span>
+										<div className="flex-1">
+											<div className="font-semibold text-gray-900 text-sm">
+												生成链接二维码
+											</div>
+											<div className="mt-0.5 text-gray-500 text-xs">
+												输入链接生成码
+											</div>
+										</div>
+									</div>
+									<div className="ml-4 flex items-start gap-3">
+										<span className="text-xl">📝</span>
+										<div className="flex-1">
+											<div className="font-semibold text-gray-900 text-sm">
+												生成文本二维码
+											</div>
+											<div className="mt-0.5 text-gray-500 text-xs">
+												输入文本生成码
+											</div>
+										</div>
+									</div>
+									<div className="ml-4 flex items-start gap-3">
+										<span className="text-xl">📶</span>
+										<div className="flex-1">
+											<div className="font-semibold text-gray-900 text-sm">
+												WiFi密码分享
+											</div>
+											<div className="mt-0.5 text-gray-500 text-xs">
+												生成WiFi连接码
+											</div>
+										</div>
+									</div>
+									<div className="ml-4 flex items-start gap-3">
+										<span className="text-xl">👤</span>
+										<div className="flex-1">
+											<div className="font-semibold text-gray-900 text-sm">
+												联系方式分享
+											</div>
+											<div className="mt-0.5 text-gray-500 text-xs">
+												生成名片二维码
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
 						</div>
 					</div>
 				</div>
