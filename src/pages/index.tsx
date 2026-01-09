@@ -19,6 +19,17 @@ export default function Home() {
 	const [isScanning, setIsScanning] = useState(false);
 	const [scannerKey, setScannerKey] = useState(0);
 	const [generatedQrValue, setGeneratedQrValue] = useState("");
+	const [copiedId, setCopiedId] = useState<string | null>(null);
+
+	const handleCopyItem = async (content: string, id: string) => {
+		try {
+			await navigator.clipboard.writeText(content);
+			setCopiedId(id);
+			setTimeout(() => setCopiedId(null), 2000);
+		} catch (err) {
+			console.error("Failed to copy", err);
+		}
+	};
 
 	const handleScanSuccess = (
 		decodedText: string,
@@ -109,11 +120,10 @@ export default function Home() {
 							{/* Tab 切换 */}
 							<div className="flex shrink-0 border-gray-200/50 border-b bg-gray-50/50">
 								<button
-									className={`relative flex-1 px-6 py-4 font-semibold transition-all ${
-										activeTab === "scan"
-											? "bg-white text-blue-600"
-											: "text-gray-600 hover:bg-gray-100/50 hover:text-gray-900"
-									}`}
+									className={`relative flex-1 px-6 py-4 font-semibold transition-all ${activeTab === "scan"
+										? "bg-white text-blue-600"
+										: "text-gray-600 hover:bg-gray-100/50 hover:text-gray-900"
+										}`}
 									onClick={() => setActiveTab("scan")}
 									type="button"
 								>
@@ -123,11 +133,10 @@ export default function Home() {
 									📷 扫描二维码
 								</button>
 								<button
-									className={`relative flex-1 px-6 py-4 font-semibold transition-all ${
-										activeTab === "generate"
-											? "bg-white text-blue-600"
-											: "text-gray-600 hover:bg-gray-100/50 hover:text-gray-900"
-									}`}
+									className={`relative flex-1 px-6 py-4 font-semibold transition-all ${activeTab === "generate"
+										? "bg-white text-blue-600"
+										: "text-gray-600 hover:bg-gray-100/50 hover:text-gray-900"
+										}`}
 									onClick={() => setActiveTab("generate")}
 									type="button"
 								>
@@ -227,7 +236,7 @@ export default function Home() {
 						<div className="flex w-[420px] flex-col">
 							{activeTab === "scan" ? (
 								// 扫描历史
-								<div className="flex flex-col overflow-hidden rounded-2xl border border-gray-200/50 bg-white/80 shadow-sm backdrop-blur-sm">
+								<div className="flex flex-col max-h-[600px] overflow-hidden rounded-2xl border border-gray-200/50 bg-white/80 shadow-sm backdrop-blur-sm">
 									{/* 标题栏 */}
 									<div className="shrink-0 border-gray-200/50 border-b bg-gray-50/50 px-6 py-4">
 										<div className="flex items-center justify-between">
@@ -260,8 +269,19 @@ export default function Home() {
 														key={item.id}
 													>
 														<div className="mb-2 flex items-start justify-between gap-2">
-															<div className="flex-1 break-all font-medium text-gray-800 text-sm leading-relaxed">
-																{item.content}
+															<div className="flex-1 break-all font-medium text-sm leading-relaxed">
+																{item.isUrl ? (
+																	<a
+																		className="text-blue-600 hover:text-blue-800 hover:underline"
+																		href={item.content}
+																		rel="noopener noreferrer"
+																		target="_blank"
+																	>
+																		{item.content}
+																	</a>
+																) : (
+																	<span className="text-gray-800">{item.content}</span>
+																)}
 															</div>
 															{item.isUrl && (
 																<a
@@ -280,14 +300,15 @@ export default function Home() {
 																{item.timestamp.toLocaleTimeString()}
 															</span>
 															<button
-																className="font-medium text-blue-600 text-xs transition hover:text-blue-700 hover:underline"
-																onClick={() => {
-																	navigator.clipboard.writeText(item.content);
-																	alert("已复制");
-																}}
+																className={`font-medium text-xs transition ${copiedId === item.id
+																	? "text-green-600"
+																	: "text-blue-600 hover:text-blue-700"
+																	}`}
+																onClick={() => handleCopyItem(item.content, item.id)}
 																type="button"
+																disabled={copiedId === item.id}
 															>
-																📋 复制
+																{copiedId === item.id ? "✅ 已复制" : "📋 复制"}
 															</button>
 														</div>
 													</div>
@@ -297,16 +318,16 @@ export default function Home() {
 									</div>
 								</div>
 							) : // 二维码预览
-							generatedQrValue ? (
-								<QrPreview value={generatedQrValue} />
-							) : (
-								<div className="flex flex-1 items-center justify-center rounded-2xl border border-gray-200/50 bg-white/80 p-12 shadow-sm backdrop-blur-sm">
-									<div className="text-center text-gray-400">
-										<div className="mb-3 text-4xl">👈</div>
-										<p className="text-sm">输入文本后点击生成</p>
+								generatedQrValue ? (
+									<QrPreview value={generatedQrValue} />
+								) : (
+									<div className="flex flex-1 items-center justify-center rounded-2xl border border-gray-200/50 bg-white/80 p-12 shadow-sm backdrop-blur-sm">
+										<div className="text-center text-gray-400">
+											<div className="mb-3 text-4xl">👈</div>
+											<p className="text-sm">输入文本后点击生成</p>
+										</div>
 									</div>
-								</div>
-							)}
+								)}
 						</div>
 					</div>
 
