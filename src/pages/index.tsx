@@ -4,6 +4,8 @@ import type { Html5QrcodeResult } from "html5-qrcode";
 import { QRCodeSVG } from "qrcode.react";
 import QrScanner from "@/components/QrScanner";
 import versionInfo from "../../version.json";
+import { useTranslations } from "next-intl";
+import type { GetStaticProps } from "next";
 import {
 	Camera,
 	QrCode,
@@ -20,7 +22,6 @@ import {
 	X,
 	ChevronRight,
 	ExternalLink,
-	Share2,
 } from "lucide-react";
 
 interface ScanHistoryItem {
@@ -31,6 +32,7 @@ interface ScanHistoryItem {
 }
 
 export default function Home() {
+	const t = useTranslations("Index");
 	const [activeTab, setActiveTab] = useState<"scan" | "generate">("scan");
 	const [scanHistory, setScanHistory] = useState<ScanHistoryItem[]>([]);
 	const [isScanning, setIsScanning] = useState(false);
@@ -127,8 +129,8 @@ export default function Home() {
 	return (
 		<>
 			<Head>
-				<title>Camera QR Reader</title>
-				<meta content="Modern & Professional QR Tool" name="description" />
+				<title>{t("title")}</title>
+				<meta content={t("metaDescription")} name="description" />
 				<link href="/favicon.ico" rel="icon" />
 			</Head>
 
@@ -148,14 +150,13 @@ export default function Home() {
 							</div>
 							<div>
 								<h1 className="font-bold text-2xl text-slate-800 tracking-tight">
-									QR Reader
+									{t("headerTitle")}
 									<span className="ml-2 rounded-full bg-indigo-50 px-2 py-0.5 align-middle font-medium text-indigo-600 text-xs tracking-normal">
-										PRO
+										{t("proBadge")}
 									</span>
 								</h1>
 								<p className="font-medium text-slate-400 text-sm">
-									v
-									{versionInfo.version}
+									v{versionInfo.version}
 								</p>
 							</div>
 						</div>
@@ -166,7 +167,7 @@ export default function Home() {
 							rel="noopener noreferrer"
 						>
 							<Github className="h-4 w-4" />
-							<span>GitHub</span>
+							<span>{t("github")}</span>
 						</a>
 					</header>
 
@@ -181,7 +182,7 @@ export default function Home() {
 									}`}
 							>
 								<Camera className="h-4 w-4" />
-								Scan QR
+								{t("tabScan")}
 							</button>
 							<button
 								onClick={() => setActiveTab("generate")}
@@ -191,7 +192,7 @@ export default function Home() {
 									}`}
 							>
 								<QrCode className="h-4 w-4" />
-								Create QR
+								{t("tabGenerate")}
 							</button>
 						</div>
 					</div>
@@ -199,7 +200,6 @@ export default function Home() {
 					<div className="grid grid-cols-1 gap-8 lg:grid-cols-12 items-start">
 						{/* Left Column: Main Action Area */}
 						<div className="flex flex-col gap-6 lg:col-span-7">
-
 							{/* Card Container */}
 							<div className="relative min-h-[500px] overflow-hidden rounded-[2rem] border border-white/40 bg-white/60 shadow-2xl shadow-indigo-100/50 backdrop-blur-xl transition-all">
 								{activeTab === "scan" ? (
@@ -216,7 +216,7 @@ export default function Home() {
 														onClick={() => setIsScanning(false)}
 														className="rounded-full bg-white/90 px-6 py-2 font-medium text-slate-700 text-sm shadow-lg backdrop-blur hover:bg-white"
 													>
-														Cancel Scan
+														{t("cancelScan")}
 													</button>
 												</div>
 											</div>
@@ -226,18 +226,17 @@ export default function Home() {
 													<Camera className="h-10 w-10" />
 												</div>
 												<h2 className="mb-3 font-bold text-2xl text-slate-800">
-													Ready to Scan
+													{t("scanReadyTitle")}
 												</h2>
 												<p className="mb-8 max-w-sm text-slate-500 leading-relaxed">
-													Place a QR code in front of your camera to
-													automatically detect and read its content.
+													{t("scanReadyDesc")}
 												</p>
 												<button
 													onClick={restartScanner}
 													className="group relative flex items-center gap-2 overflow-hidden rounded-xl bg-slate-900 px-8 py-4 font-semibold text-white shadow-xl transition-all hover:scale-[1.02] hover:bg-slate-800 active:scale-[0.98]"
 												>
 													<Zap className="h-5 w-5 fill-yellow-400 text-yellow-400 transition-colors group-hover:text-yellow-300" />
-													<span>Activate Camera</span>
+													<span>{t("activateCamera")}</span>
 												</button>
 											</div>
 										)}
@@ -265,7 +264,7 @@ export default function Home() {
 											<div className="flex flex-col gap-4">
 												<input
 													type="text"
-													placeholder="Type text or URL here..."
+													placeholder={t("inputPlaceholder")}
 													className="w-full rounded-xl border border-slate-200 bg-white/50 px-4 py-3 font-medium text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10"
 													value={inputUrl}
 													onChange={handleGenerateChange}
@@ -275,7 +274,7 @@ export default function Home() {
 													onClick={downloadQrCode}
 													className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3.5 font-bold text-white shadow-lg shadow-indigo-500/20 transition-all hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
 												>
-													Download PNG
+													{t("downloadPng")}
 												</button>
 											</div>
 										</div>
@@ -291,7 +290,7 @@ export default function Home() {
 									<div className="flex items-center justify-between border-slate-100 border-b bg-white/30 px-6 py-4 backdrop-blur-md">
 										<h3 className="flex items-center gap-2 font-bold text-lg text-slate-800">
 											<History className="h-5 w-5 text-indigo-500" />
-											Scan History
+											{t("historyTitle")}
 										</h3>
 										{scanHistory.length > 0 && (
 											<button
@@ -299,7 +298,7 @@ export default function Home() {
 												className="flex items-center gap-1 rounded-lg px-2 py-1 font-medium text-rose-500 text-xs hover:bg-rose-50"
 											>
 												<Trash2 className="h-3.5 w-3.5" />
-												Clear
+												{t("clearHistory")}
 											</button>
 										)}
 									</div>
@@ -307,7 +306,7 @@ export default function Home() {
 										{scanHistory.length === 0 ? (
 											<div className="flex h-full flex-col items-center justify-center py-20 text-center text-slate-400">
 												<History className="mb-3 h-12 w-12 text-slate-200" />
-												<p className="text-sm">No recent scans</p>
+												<p className="text-sm">{t("noHistory")}</p>
 											</div>
 										) : (
 											<div className="space-y-3">
@@ -319,7 +318,7 @@ export default function Home() {
 														<div>
 															<div className="mb-1 flex items-center justify-between">
 																<span className="font-semibold text-[10px] text-slate-400 uppercase tracking-wider">
-																	{item.isUrl ? "LINK" : "TEXT"}
+																	{item.isUrl ? t("typeLink") : t("typeText")}
 																</span>
 																<span className="text-[10px] text-slate-400">
 																	{item.timestamp.toLocaleTimeString()}
@@ -352,11 +351,11 @@ export default function Home() {
 															>
 																{copiedId === item.id ? (
 																	<>
-																		<Check className="h-3 w-3" /> Copied
+																		<Check className="h-3 w-3" /> {t("copied")}
 																	</>
 																) : (
 																	<>
-																		<Copy className="h-3 w-3" /> Copy
+																		<Copy className="h-3 w-3" /> {t("copy")}
 																	</>
 																)}
 															</button>
@@ -368,7 +367,7 @@ export default function Home() {
 																	className="flex items-center gap-1.5 rounded-md bg-indigo-50 px-2 py-1 font-bold text-indigo-600 text-xs transition-colors hover:bg-indigo-100"
 																>
 																	<LinkIcon className="h-3 w-3" />
-																	Open
+																	{t("open")}
 																</a>
 															)}
 														</div>
@@ -379,7 +378,6 @@ export default function Home() {
 									</div>
 								</div>
 							)}
-							{/* Help Tip if History is empty or small? Nah, cleaner without. */}
 						</div>
 					</div>
 				</div>
@@ -403,7 +401,7 @@ export default function Home() {
 							{/* Modal Header */}
 							<div className="flex items-center justify-between border-slate-100 border-b p-6">
 								<h2 className="font-bold text-xl text-slate-800">
-									Help & Connect
+									{t("helpTitle")}
 								</h2>
 								<button
 									onClick={() => setShowHelpModal(false)}
@@ -422,7 +420,7 @@ export default function Home() {
 										: "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
 										}`}
 								>
-									Quick Guide
+									{t("tabGuide")}
 								</button>
 								<button
 									onClick={() => setHelpTab("ios")}
@@ -432,7 +430,7 @@ export default function Home() {
 										}`}
 								>
 									<span className="flex items-center justify-center gap-2">
-										<Zap className="h-4 w-4 fill-indigo-600 text-indigo-600" /> iOS Power Mode
+										<Zap className="h-4 w-4 fill-indigo-600 text-indigo-600" /> {t("tabIos")}
 									</span>
 								</button>
 							</div>
@@ -446,9 +444,9 @@ export default function Home() {
 												<Camera className="h-6 w-6" />
 											</div>
 											<div>
-												<h3 className="font-bold text-slate-800">Scan QR Codes</h3>
+												<h3 className="font-bold text-slate-800">{t("guideScanTitle")}</h3>
 												<p className="mt-1 text-slate-500 text-sm leading-relaxed">
-													Use your webcam to scan QR codes instantly. URLs will be detected automatically, and you can copy content with a single click.
+													{t("guideScanDesc")}
 												</p>
 											</div>
 										</div>
@@ -457,9 +455,9 @@ export default function Home() {
 												<QrCode className="h-6 w-6" />
 											</div>
 											<div>
-												<h3 className="font-bold text-slate-800">Generate QR Codes</h3>
+												<h3 className="font-bold text-slate-800">{t("guideGenTitle")}</h3>
 												<p className="mt-1 text-slate-500 text-sm leading-relaxed">
-													Type any text or link to create a high-quality QR code. You can download it as a PNG image for sharing or printing.
+													{t("guideGenDesc")}
 												</p>
 											</div>
 										</div>
@@ -468,9 +466,9 @@ export default function Home() {
 												<Wifi className="h-6 w-6" />
 											</div>
 											<div>
-												<h3 className="font-bold text-slate-800">Share Information</h3>
+												<h3 className="font-bold text-slate-800">{t("guideShareTitle")}</h3>
 												<p className="mt-1 text-slate-500 text-sm leading-relaxed">
-													Easily transfer long text, WiFi passwords, or links from your computer to your mobile device by scanning the screen.
+													{t("guideShareDesc")}
 												</p>
 											</div>
 										</div>
@@ -486,31 +484,31 @@ export default function Home() {
 												/>
 											</div>
 											<p className="mt-3 text-center font-medium text-slate-400 text-xs">
-												Scan with iPhone Camera
+												{t("iosScanTitle")}
 											</p>
 										</div>
 										<div className="flex-1 space-y-4">
 											<div>
 												<h3 className="flex items-center gap-2 font-bold text-slate-800 text-lg">
-													Enable iOS Power Mode
+													{t("iosEnableTitle")}
 												</h3>
 												<p className="mt-1 text-slate-500 text-sm">
-													Install our custom shortcut to generate QR codes directly from your iPhone clipboard or share sheet.
+													{t("iosEnableDesc")}
 												</p>
 											</div>
 
 											<div className="space-y-3">
 												<div className="flex items-start gap-3 rounded-xl bg-slate-50 p-3">
 													<span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-200 font-bold text-[10px] text-slate-600">1</span>
-													<p className="text-slate-600 text-xs leading-5">Scan the QR code on the left with your iPhone Camera.</p>
+													<p className="text-slate-600 text-xs leading-5">{t("iosStep1")}</p>
 												</div>
 												<div className="flex items-start gap-3 rounded-xl bg-slate-50 p-3">
 													<span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-200 font-bold text-[10px] text-slate-600">2</span>
-													<p className="text-slate-600 text-xs leading-5">Tap "Get Shortcut" to add it to your library.</p>
+													<p className="text-slate-600 text-xs leading-5">{t("iosStep2")}</p>
 												</div>
 												<div className="flex items-start gap-3 rounded-xl bg-indigo-50 p-3">
 													<span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-200 font-bold text-[10px] text-indigo-700">3</span>
-													<p className="text-indigo-700 text-xs leading-5">Use the "Share" menu on any text or link on your iPhone to create a QR code instantly!</p>
+													<p className="text-indigo-700 text-xs leading-5">{t("iosStep3")}</p>
 												</div>
 											</div>
 
@@ -520,7 +518,7 @@ export default function Home() {
 												rel="noopener noreferrer"
 												className="mt-2 inline-flex items-center gap-2 font-semibold text-indigo-600 text-sm hover:underline"
 											>
-												Open Direct Link <ExternalLink className="h-3 w-3" />
+												{t("openDirectLink")} <ExternalLink className="h-3 w-3" />
 											</a>
 										</div>
 									</div>
@@ -549,3 +547,11 @@ export default function Home() {
 		</>
 	);
 }
+
+export const getStaticProps: GetStaticProps = async (context) => {
+	return {
+		props: {
+			messages: (await import(`../../messages/${context.locale}.json`)).default,
+		},
+	};
+};
