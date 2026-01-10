@@ -397,7 +397,7 @@ export default function Home() {
 							onClick={() => setShowHelpModal(false)}
 							className="absolute inset-0 z-0"
 						/>
-						<div className="relative z-10 w-full max-w-2xl overflow-hidden rounded-3xl bg-white shadow-2xl animate-in zoom-in-95 duration-200">
+						<div className="relative z-10 w-full max-w-2xl overflow-hidden rounded-3xl bg-white shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]">
 							{/* Modal Header */}
 							<div className="flex items-center justify-between border-slate-100 border-b p-6">
 								<h2 className="font-bold text-xl text-slate-800">
@@ -436,7 +436,7 @@ export default function Home() {
 							</div>
 
 							{/* Modal Content */}
-							<div className="p-8">
+							<div className="p-8 overflow-y-auto custom-scrollbar">
 								{helpTab === "guide" ? (
 									<div className="space-y-6">
 										<div className="flex gap-4">
@@ -474,52 +474,88 @@ export default function Home() {
 										</div>
 									</div>
 								) : (
-									<div className="flex flex-col md:flex-row gap-8">
-										<div className="flex-shrink-0">
-											<div className="rounded-2xl border-2 border-indigo-100 bg-white p-4 shadow-sm">
-												<QRCodeSVG
-													value="https://www.icloud.com/shortcuts/example"
-													size={140}
-													level="M"
-												/>
-											</div>
-											<p className="mt-3 text-center font-medium text-slate-400 text-xs">
-												{t("iosScanTitle")}
+									<div className="flex flex-col gap-6">
+										<div className="text-center">
+											<h3 className="font-bold text-xl text-slate-800 tracking-tight">
+												{t("iosTitle")}
+											</h3>
+											<p className="mt-2 text-slate-500 text-sm">
+												{t("iosDesc")}
 											</p>
 										</div>
-										<div className="flex-1 space-y-4">
-											<div>
-												<h3 className="flex items-center gap-2 font-bold text-slate-800 text-lg">
-													{t("iosEnableTitle")}
-												</h3>
-												<p className="mt-1 text-slate-500 text-sm">
-													{t("iosEnableDesc")}
+
+										<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+											{/* Card 1: Scan Helper */}
+											<div className="group relative flex flex-col rounded-3xl border border-blue-100 bg-blue-50/30 p-5 transition-all hover:bg-blue-50">
+												<div className="mb-4 flex items-start justify-between">
+													<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-blue-600 shadow-sm ring-1 ring-blue-100">
+														<Camera className="h-5 w-5" />
+													</div>
+													<div className="rounded-full bg-blue-100 px-2 py-1 font-bold text-[10px] text-blue-600">
+														{t("shortcut1Title")}
+													</div>
+												</div>
+												<h4 className="mb-1 font-bold text-slate-800">
+													{t("shortcut1Sub")}
+												</h4>
+												<p className="mb-4 text-xs text-slate-500 leading-relaxed">
+													{t("shortcut1Desc")}
 												</p>
+												<div className="mt-auto flex flex-col items-center">
+													<div className="mb-3 rounded-xl border-2 border-white bg-white p-2 shadow-sm">
+														<QRCodeSVG
+															value="https://www.icloud.com/shortcuts/scan-example"
+															size={120}
+															level="M"
+														/>
+													</div>
+													<a
+														href="https://www.icloud.com/shortcuts/scan-example"
+														target="_blank"
+														rel="noopener noreferrer"
+														className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-2.5 font-bold text-white text-xs shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-700 active:scale-95"
+													>
+														<Zap className="h-3.5 w-3.5 fill-white" />
+														{t("getShortcut")}
+													</a>
+												</div>
 											</div>
 
-											<div className="space-y-3">
-												<div className="flex items-start gap-3 rounded-xl bg-slate-50 p-3">
-													<span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-200 font-bold text-[10px] text-slate-600">1</span>
-													<p className="text-slate-600 text-xs leading-5">{t("iosStep1")}</p>
+											{/* Card 2: Generate Helper */}
+											<div className="group relative flex flex-col rounded-3xl border border-purple-100 bg-purple-50/30 p-5 transition-all hover:bg-purple-50">
+												<div className="mb-4 flex items-start justify-between">
+													<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-purple-600 shadow-sm ring-1 ring-purple-100">
+														<QrCode className="h-5 w-5" />
+													</div>
+													<div className="rounded-full bg-purple-100 px-2 py-1 font-bold text-[10px] text-purple-600">
+														{t("shortcut2Title")}
+													</div>
 												</div>
-												<div className="flex items-start gap-3 rounded-xl bg-slate-50 p-3">
-													<span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-200 font-bold text-[10px] text-slate-600">2</span>
-													<p className="text-slate-600 text-xs leading-5">{t("iosStep2")}</p>
-												</div>
-												<div className="flex items-start gap-3 rounded-xl bg-indigo-50 p-3">
-													<span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-200 font-bold text-[10px] text-indigo-700">3</span>
-													<p className="text-indigo-700 text-xs leading-5">{t("iosStep3")}</p>
+												<h4 className="mb-1 font-bold text-slate-800">
+													{t("shortcut2Sub")}
+												</h4>
+												<p className="mb-4 text-xs text-slate-500 leading-relaxed">
+													{t("shortcut2Desc")}
+												</p>
+												<div className="mt-auto flex flex-col items-center">
+													<div className="mb-3 rounded-xl border-2 border-white bg-white p-2 shadow-sm">
+														<QRCodeSVG
+															value="https://www.icloud.com/shortcuts/gen-example"
+															size={120}
+															level="M"
+														/>
+													</div>
+													<a
+														href="https://www.icloud.com/shortcuts/gen-example"
+														target="_blank"
+														rel="noopener noreferrer"
+														className="flex w-full items-center justify-center gap-2 rounded-xl bg-purple-600 py-2.5 font-bold text-white text-xs shadow-lg shadow-purple-500/20 transition-all hover:bg-purple-700 active:scale-95"
+													>
+														<Zap className="h-3.5 w-3.5 fill-white" />
+														{t("getShortcut")}
+													</a>
 												</div>
 											</div>
-
-											<a
-												href="https://www.icloud.com/shortcuts/example"
-												target="_blank"
-												rel="noopener noreferrer"
-												className="mt-2 inline-flex items-center gap-2 font-semibold text-indigo-600 text-sm hover:underline"
-											>
-												{t("openDirectLink")} <ExternalLink className="h-3 w-3" />
-											</a>
 										</div>
 									</div>
 								)}

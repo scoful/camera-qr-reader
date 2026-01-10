@@ -35,12 +35,15 @@
         "guideGenDesc": "Type any text or link to create a high-quality QR code. You can download it as a PNG image for sharing or printing.",
         "guideShareTitle": "Share Information",
         "guideShareDesc": "Easily transfer long text, WiFi passwords, or links from your computer to your mobile device by scanning the screen.",
-        "iosScanTitle": "Scan with iPhone Camera",
-        "iosEnableTitle": "Enable iOS Power Mode",
-        "iosEnableDesc": "Install our custom shortcut to generate QR codes directly from your iPhone clipboard or share sheet.",
-        "iosStep1": "Scan the QR code on the left with your iPhone Camera.",
-        "iosStep2": "Tap \"Get Shortcut\" to add it to your library.",
-        "iosStep3": "Use the \"Share\" menu on any text or link on your iPhone to create a QR code instantly!",
+        "iosTitle": "iOS Workflow Power Pack",
+        "iosDesc": "Unlock the full potential of your device with our exclusive Shortcuts ecosystem.",
+        "shortcut1Title": "PC ➔ Phone",
+        "shortcut1Sub": "Scan Helper",
+        "shortcut1Desc": "Quickly scan QR codes from this website and auto-save content to your iPhone clipboard.",
+        "shortcut2Title": "Phone ➔ PC",
+        "shortcut2Sub": "Beam Helper",
+        "shortcut2Desc": "Convert your iPhone clipboard text into a QR code instantly for this website to scan.",
+        "getShortcut": "Get Shortcut",
         "openDirectLink": "Open Direct Link"
     }
 }

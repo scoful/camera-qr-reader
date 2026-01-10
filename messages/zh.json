@@ -35,12 +35,15 @@
         "guideGenDesc": "输入任何文本或链接即可生成高清二维码。您可以下载为 PNG 图片用于分享或打印。",
         "guideShareTitle": "信息分享",
         "guideShareDesc": "通过屏幕扫描，轻松将长文本、WiFi 密码或链接从电脑传输到手机。",
-        "iosScanTitle": "使用 iPhone 相机扫描",
-        "iosEnableTitle": "启用 iOS 快捷模式",
-        "iosEnableDesc": "安装我们的自定义快捷指令，直接从 iPhone 剪贴板或分享菜单生成二维码。",
-        "iosStep1": "使用 iPhone 相机扫描左侧的二维码。",
-        "iosStep2": "点击“获取快捷指令”将其添加到您的库中。",
-        "iosStep3": "在 iPhone 上对任何文本或链接使用“分享”菜单即可即时生成二维码！",
+        "iosTitle": "iOS 效率工作流",
+        "iosDesc": "通过我们专属的快捷指令生态，解锁您设备的全部潜能。",
+        "shortcut1Title": "PC ➔ 手机",
+        "shortcut1Sub": "扫码助手",
+        "shortcut1Desc": "快速扫描网页生成的二维码，将内容自动保存到您的 iPhone 剪贴板。",
+        "shortcut2Title": "手机 ➔ PC",
+        "shortcut2Sub": "传图助手",
+        "shortcut2Desc": "将您的 iPhone 剪贴板文本即时转换为二维码，供网页端扫描读取。",
+        "getShortcut": "获取指令",
         "openDirectLink": "打开直链"
     }
 }
