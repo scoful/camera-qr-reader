@@ -1,6 +1,6 @@
 import Head from "next/head";
-import { useState, useRef, useEffect } from "react";
-import { Html5QrcodeResult } from "html5-qrcode";
+import { useState, useEffect } from "react";
+import type { Html5QrcodeResult } from "html5-qrcode";
 import { QRCodeSVG } from "qrcode.react";
 import QrScanner from "@/components/QrScanner";
 import versionInfo from "../../version.json";
@@ -14,11 +14,13 @@ import {
 	Trash2,
 	Github,
 	Smartphone,
-	Monitor,
 	Wifi,
-	User,
-	ChevronRight,
 	Zap,
+	HelpCircle,
+	X,
+	ChevronRight,
+	ExternalLink,
+	Share2,
 } from "lucide-react";
 
 interface ScanHistoryItem {
@@ -36,6 +38,20 @@ export default function Home() {
 	const [generatedQrValue, setGeneratedQrValue] = useState("");
 	const [inputUrl, setInputUrl] = useState("");
 	const [copiedId, setCopiedId] = useState<string | null>(null);
+	const [showHelpModal, setShowHelpModal] = useState(false);
+	const [helpTab, setHelpTab] = useState<"guide" | "ios">("guide");
+
+	// Lock body scroll when modal is open
+	useEffect(() => {
+		if (showHelpModal) {
+			document.body.style.overflow = "hidden";
+		} else {
+			document.body.style.overflow = "unset";
+		}
+		return () => {
+			document.body.style.overflow = "unset";
+		};
+	}, [showHelpModal]);
 
 	// Detect URL
 	const isUrl = (text: string): boolean => {
@@ -154,32 +170,35 @@ export default function Home() {
 						</a>
 					</header>
 
-					<div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+					{/* Tab Switcher - Centered */}
+					<div className="mb-8 flex justify-center">
+						<div className="flex w-fit rounded-full bg-white/60 p-1.5 backdrop-blur-md ring-1 ring-black/5">
+							<button
+								onClick={() => setActiveTab("scan")}
+								className={`flex items-center gap-2 rounded-full px-8 py-3 font-semibold text-sm transition-all duration-300 ${activeTab === "scan"
+									? "bg-indigo-600 text-white shadow-md shadow-indigo-500/25"
+									: "text-slate-500 hover:bg-white/50 hover:text-slate-700"
+									}`}
+							>
+								<Camera className="h-4 w-4" />
+								Scan QR
+							</button>
+							<button
+								onClick={() => setActiveTab("generate")}
+								className={`flex items-center gap-2 rounded-full px-8 py-3 font-semibold text-sm transition-all duration-300 ${activeTab === "generate"
+									? "bg-indigo-600 text-white shadow-md shadow-indigo-500/25"
+									: "text-slate-500 hover:bg-white/50 hover:text-slate-700"
+									}`}
+							>
+								<QrCode className="h-4 w-4" />
+								Create QR
+							</button>
+						</div>
+					</div>
+
+					<div className="grid grid-cols-1 gap-8 lg:grid-cols-12 items-start">
 						{/* Left Column: Main Action Area */}
 						<div className="flex flex-col gap-6 lg:col-span-7">
-							{/* Tab Switcher - Floating Pills */}
-							<div className="flex w-fit rounded-full bg-white/60 p-1.5 backdrop-blur-md ring-1 ring-black/5">
-								<button
-									onClick={() => setActiveTab("scan")}
-									className={`flex items-center gap-2 rounded-full px-6 py-2.5 font-semibold text-sm transition-all duration-300 ${activeTab === "scan"
-											? "bg-indigo-600 text-white shadow-md shadow-indigo-500/25"
-											: "text-slate-500 hover:bg-white/50 hover:text-slate-700"
-										}`}
-								>
-									<Camera className="h-4 w-4" />
-									Scan QR
-								</button>
-								<button
-									onClick={() => setActiveTab("generate")}
-									className={`flex items-center gap-2 rounded-full px-6 py-2.5 font-semibold text-sm transition-all duration-300 ${activeTab === "generate"
-											? "bg-indigo-600 text-white shadow-md shadow-indigo-500/25"
-											: "text-slate-500 hover:bg-white/50 hover:text-slate-700"
-										}`}
-								>
-									<QrCode className="h-4 w-4" />
-									Create QR
-								</button>
-							</div>
 
 							{/* Card Container */}
 							<div className="relative min-h-[500px] overflow-hidden rounded-[2rem] border border-white/40 bg-white/60 shadow-2xl shadow-indigo-100/50 backdrop-blur-xl transition-all">
@@ -265,11 +284,10 @@ export default function Home() {
 							</div>
 						</div>
 
-						{/* Right Column: Dynamic Sidebar */}
+						{/* Right Column: Scan History Only */}
 						<div className="flex flex-col gap-6 lg:col-span-5">
-							{/* History Card */}
 							{activeTab === "scan" && (
-								<div className="flex flex-1 flex-col overflow-hidden rounded-[2rem] border border-white/40 bg-white/60 shadow-xl shadow-indigo-100/50 backdrop-blur-xl">
+								<div className="flex flex-col overflow-hidden rounded-[2rem] border border-white/40 bg-white/60 shadow-xl shadow-indigo-100/50 backdrop-blur-xl">
 									<div className="flex items-center justify-between border-slate-100 border-b bg-white/30 px-6 py-4 backdrop-blur-md">
 										<h3 className="flex items-center gap-2 font-bold text-lg text-slate-800">
 											<History className="h-5 w-5 text-indigo-500" />
@@ -287,7 +305,7 @@ export default function Home() {
 									</div>
 									<div className="custom-scrollbar max-h-[600px] flex-1 overflow-y-auto p-4">
 										{scanHistory.length === 0 ? (
-											<div className="flex h-full flex-col items-center justify-center py-10 text-center text-slate-400">
+											<div className="flex h-full flex-col items-center justify-center py-20 text-center text-slate-400">
 												<History className="mb-3 h-12 w-12 text-slate-200" />
 												<p className="text-sm">No recent scans</p>
 											</div>
@@ -328,8 +346,8 @@ export default function Home() {
 																	handleCopyItem(item.content, item.id)
 																}
 																className={`flex items-center gap-1.5 rounded-md px-2 py-1 font-semibold text-xs transition-colors ${copiedId === item.id
-																		? "bg-teal-50 text-teal-600"
-																		: "bg-slate-100 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600"
+																	? "bg-teal-50 text-teal-600"
+																	: "bg-slate-100 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600"
 																	}`}
 															>
 																{copiedId === item.id ? (
@@ -361,41 +379,156 @@ export default function Home() {
 									</div>
 								</div>
 							)}
-
-							{/* Scenarios - Always Visible or contextual? Let's make it contextual per tab or just always there if room? */}
-							{/* Keeping it simple: Show specific tips card */}
-							<div className="rounded-[2rem] border border-white/40 bg-white/40 p-6 backdrop-blur-md">
-								<h3 className="mb-4 font-bold text-lg text-slate-800">
-									Features & Tips
-								</h3>
-								<div className="grid grid-cols-2 gap-4">
-									<div className="flex flex-col gap-2 rounded-2xl bg-white/50 p-4 transition-colors hover:bg-white/80">
-										<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-orange-500">
-											<Smartphone className="h-5 w-5" />
-										</div>
-										<p className="font-semibold text-slate-700 text-xs">
-											Cross-device
-										</p>
-										<p className="text-[10px] text-slate-400">
-											Send data to phone
-										</p>
-									</div>
-									<div className="flex flex-col gap-2 rounded-2xl bg-white/50 p-4 transition-colors hover:bg-white/80">
-										<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-50 text-teal-500">
-											<Wifi className="h-5 w-5" />
-										</div>
-										<p className="font-semibold text-slate-700 text-xs">
-											WiFi Share
-										</p>
-										<p className="text-[10px] text-slate-400">
-											Create Login QR
-										</p>
-									</div>
-								</div>
-							</div>
+							{/* Help Tip if History is empty or small? Nah, cleaner without. */}
 						</div>
 					</div>
 				</div>
+
+				{/* Floating Help Button */}
+				<button
+					onClick={() => setShowHelpModal(true)}
+					className="fixed right-6 bottom-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-slate-900 text-white shadow-2xl transition-all hover:scale-105 hover:bg-slate-800 active:scale-95"
+				>
+					<HelpCircle className="h-6 w-6" />
+				</button>
+
+				{/* Help Modal */}
+				{showHelpModal && (
+					<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+						<div
+							onClick={() => setShowHelpModal(false)}
+							className="absolute inset-0 z-0"
+						/>
+						<div className="relative z-10 w-full max-w-2xl overflow-hidden rounded-3xl bg-white shadow-2xl animate-in zoom-in-95 duration-200">
+							{/* Modal Header */}
+							<div className="flex items-center justify-between border-slate-100 border-b p-6">
+								<h2 className="font-bold text-xl text-slate-800">
+									Help & Connect
+								</h2>
+								<button
+									onClick={() => setShowHelpModal(false)}
+									className="rounded-full bg-slate-100 p-2 text-slate-500 hover:bg-slate-200"
+								>
+									<X className="h-5 w-5" />
+								</button>
+							</div>
+
+							{/* Modal Tabs */}
+							<div className="flex border-slate-100 border-b bg-slate-50/50">
+								<button
+									onClick={() => setHelpTab("guide")}
+									className={`flex-1 py-4 font-semibold text-sm transition-colors ${helpTab === "guide"
+										? "border-b-2 border-indigo-600 text-indigo-600"
+										: "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+										}`}
+								>
+									Quick Guide
+								</button>
+								<button
+									onClick={() => setHelpTab("ios")}
+									className={`flex-1 py-4 font-semibold text-sm transition-colors ${helpTab === "ios"
+										? "border-b-2 border-indigo-600 text-indigo-600"
+										: "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+										}`}
+								>
+									<span className="flex items-center justify-center gap-2">
+										<Zap className="h-4 w-4 fill-indigo-600 text-indigo-600" /> iOS Power Mode
+									</span>
+								</button>
+							</div>
+
+							{/* Modal Content */}
+							<div className="p-8">
+								{helpTab === "guide" ? (
+									<div className="space-y-6">
+										<div className="flex gap-4">
+											<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+												<Camera className="h-6 w-6" />
+											</div>
+											<div>
+												<h3 className="font-bold text-slate-800">Scan QR Codes</h3>
+												<p className="mt-1 text-slate-500 text-sm leading-relaxed">
+													Use your webcam to scan QR codes instantly. URLs will be detected automatically, and you can copy content with a single click.
+												</p>
+											</div>
+										</div>
+										<div className="flex gap-4">
+											<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-purple-50 text-purple-600">
+												<QrCode className="h-6 w-6" />
+											</div>
+											<div>
+												<h3 className="font-bold text-slate-800">Generate QR Codes</h3>
+												<p className="mt-1 text-slate-500 text-sm leading-relaxed">
+													Type any text or link to create a high-quality QR code. You can download it as a PNG image for sharing or printing.
+												</p>
+											</div>
+										</div>
+										<div className="flex gap-4">
+											<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-orange-50 text-orange-600">
+												<Wifi className="h-6 w-6" />
+											</div>
+											<div>
+												<h3 className="font-bold text-slate-800">Share Information</h3>
+												<p className="mt-1 text-slate-500 text-sm leading-relaxed">
+													Easily transfer long text, WiFi passwords, or links from your computer to your mobile device by scanning the screen.
+												</p>
+											</div>
+										</div>
+									</div>
+								) : (
+									<div className="flex flex-col md:flex-row gap-8">
+										<div className="flex-shrink-0">
+											<div className="rounded-2xl border-2 border-indigo-100 bg-white p-4 shadow-sm">
+												<QRCodeSVG
+													value="https://www.icloud.com/shortcuts/example"
+													size={140}
+													level="M"
+												/>
+											</div>
+											<p className="mt-3 text-center font-medium text-slate-400 text-xs">
+												Scan with iPhone Camera
+											</p>
+										</div>
+										<div className="flex-1 space-y-4">
+											<div>
+												<h3 className="flex items-center gap-2 font-bold text-slate-800 text-lg">
+													Enable iOS Power Mode
+												</h3>
+												<p className="mt-1 text-slate-500 text-sm">
+													Install our custom shortcut to generate QR codes directly from your iPhone clipboard or share sheet.
+												</p>
+											</div>
+
+											<div className="space-y-3">
+												<div className="flex items-start gap-3 rounded-xl bg-slate-50 p-3">
+													<span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-200 font-bold text-[10px] text-slate-600">1</span>
+													<p className="text-slate-600 text-xs leading-5">Scan the QR code on the left with your iPhone Camera.</p>
+												</div>
+												<div className="flex items-start gap-3 rounded-xl bg-slate-50 p-3">
+													<span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-200 font-bold text-[10px] text-slate-600">2</span>
+													<p className="text-slate-600 text-xs leading-5">Tap "Get Shortcut" to add it to your library.</p>
+												</div>
+												<div className="flex items-start gap-3 rounded-xl bg-indigo-50 p-3">
+													<span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-200 font-bold text-[10px] text-indigo-700">3</span>
+													<p className="text-indigo-700 text-xs leading-5">Use the "Share" menu on any text or link on your iPhone to create a QR code instantly!</p>
+												</div>
+											</div>
+
+											<a
+												href="https://www.icloud.com/shortcuts/example"
+												target="_blank"
+												rel="noopener noreferrer"
+												className="mt-2 inline-flex items-center gap-2 font-semibold text-indigo-600 text-sm hover:underline"
+											>
+												Open Direct Link <ExternalLink className="h-3 w-3" />
+											</a>
+										</div>
+									</div>
+								)}
+							</div>
+						</div>
+					</div>
+				)}
 			</main>
 
 			<style jsx global>{`
