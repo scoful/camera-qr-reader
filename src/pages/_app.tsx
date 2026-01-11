@@ -1,17 +1,20 @@
 import type { AppType } from "next/app";
-import { NextIntlClientProvider } from "next-intl";
 import { useRouter } from "next/router";
+import { type AbstractIntlMessages, NextIntlClientProvider } from "next-intl";
 
 import "@/styles/globals.css";
 
-const MyApp: AppType = ({ Component, pageProps }) => {
+const MyApp: AppType<{ messages: AbstractIntlMessages }> = ({
+	Component,
+	pageProps,
+}) => {
 	const router = useRouter();
 
 	return (
 		<NextIntlClientProvider
 			locale={router.locale}
-			timeZone="Asia/Shanghai"
 			messages={pageProps.messages}
+			timeZone="Asia/Shanghai"
 		>
 			<Component {...pageProps} />
 		</NextIntlClientProvider>
