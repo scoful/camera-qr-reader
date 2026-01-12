@@ -9,6 +9,7 @@ import {
 	Link as LinkIcon,
 	QrCode,
 	Trash2,
+	Upload,
 	Wifi,
 	X,
 	Zap,
@@ -33,6 +34,7 @@ export default function Home() {
 	const [activeTab, setActiveTab] = useState<"scan" | "generate">("scan");
 	const [scanHistory, setScanHistory] = useState<ScanHistoryItem[]>([]);
 	const [isScanning, setIsScanning] = useState(false);
+	const [isUploading, setIsUploading] = useState(false);
 	const [scannerKey, setScannerKey] = useState(0);
 	const [generatedQrValue, setGeneratedQrValue] = useState("");
 	const [inputUrl, setInputUrl] = useState("");
@@ -99,6 +101,76 @@ export default function Home() {
 	const handleGenerateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		setInputUrl(e.target.value);
 		setGeneratedQrValue(e.target.value);
+	};
+
+	const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		if (!file) return;
+
+		// 1. Frontend Size Check (50MB)
+		const MAX_SIZE = 50 * 1024 * 1024;
+		if (file.size > MAX_SIZE) {
+			alert("File size exceeds 50MB limit.");
+			return;
+		}
+
+		setIsUploading(true);
+		try {
+			// 2. Get Presigned PUT URL
+			const putRes = await fetch("/api/r2/presign", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					action: "put",
+					key: file.name,
+					contentType: file.type,
+					size: file.size, // Send size to backend for validation
+				}),
+			});
+			if (!putRes.ok) throw new Error("Failed to get upload URL");
+			const { url: putUrl, key } = await putRes.json();
+
+			// 2. Upload to R2
+			const uploadRes = await fetch(putUrl, {
+				method: "PUT",
+				body: file,
+				headers: { "Content-Type": file.type },
+			});
+			if (!uploadRes.ok) throw new Error("Upload to R2 failed");
+
+			// 3. Generate QR Code Value
+			let finalQrValue = "";
+			const isLocal =
+				window.location.hostname === "localhost" ||
+				window.location.hostname === "127.0.0.1";
+
+			if (isLocal) {
+				// Local Dev: Fetch raw R2 Presigned URL (Long but accessible by phone)
+				// Because 'localhost' in a QR code won't open on the phone.
+				const getRes = await fetch("/api/r2/presign", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ action: "get", key }),
+				});
+				if (!getRes.ok) throw new Error("Failed to get download URL");
+				const { url } = await getRes.json();
+				finalQrValue = url;
+			} else {
+				// Production: Use Short Redirect URL
+				finalQrValue = `${window.location.origin}/api/r2/download?key=${encodeURIComponent(
+					key,
+				)}`;
+			}
+
+			// 4. Update QR
+			setGeneratedQrValue(finalQrValue);
+			setInputUrl(finalQrValue);
+		} catch (err) {
+			console.error("Upload failed", err);
+			alert("Upload failed. Please check console for details.");
+		} finally {
+			setIsUploading(false);
+		}
 	};
 
 	// Download Logic
@@ -172,11 +244,10 @@ export default function Home() {
 					<div className="mb-8 flex justify-center">
 						<div className="flex w-fit rounded-full bg-white/60 p-1.5 ring-1 ring-black/5 backdrop-blur-md">
 							<button
-								className={`flex items-center gap-2 rounded-full px-8 py-3 font-semibold text-sm transition-all duration-300 ${
-									activeTab === "scan"
-										? "bg-indigo-600 text-white shadow-indigo-500/25 shadow-md"
-										: "text-slate-500 hover:bg-white/50 hover:text-slate-700"
-								}`}
+								className={`flex items-center gap-2 rounded-full px-8 py-3 font-semibold text-sm transition-all duration-300 ${activeTab === "scan"
+									? "bg-indigo-600 text-white shadow-indigo-500/25 shadow-md"
+									: "text-slate-500 hover:bg-white/50 hover:text-slate-700"
+									}`}
 								onClick={() => setActiveTab("scan")}
 								type="button"
 							>
@@ -184,11 +255,10 @@ export default function Home() {
 								{t("tabScan")}
 							</button>
 							<button
-								className={`flex items-center gap-2 rounded-full px-8 py-3 font-semibold text-sm transition-all duration-300 ${
-									activeTab === "generate"
-										? "bg-indigo-600 text-white shadow-indigo-500/25 shadow-md"
-										: "text-slate-500 hover:bg-white/50 hover:text-slate-700"
-								}`}
+								className={`flex items-center gap-2 rounded-full px-8 py-3 font-semibold text-sm transition-all duration-300 ${activeTab === "generate"
+									? "bg-indigo-600 text-white shadow-indigo-500/25 shadow-md"
+									: "text-slate-500 hover:bg-white/50 hover:text-slate-700"
+									}`}
 								onClick={() => setActiveTab("generate")}
 								type="button"
 							>
@@ -281,6 +351,40 @@ export default function Home() {
 													{t("downloadPng")}
 												</button>
 											</div>
+
+											<div className="relative flex items-center py-2">
+												<div className="grow border-t border-slate-200" />
+												<span className="shrink-0 px-3 text-slate-400 text-xs uppercase">
+													OR
+												</span>
+												<div className="grow border-t border-slate-200" />
+											</div>
+
+											<div>
+												<label className="flex w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 py-4 transition-colors hover:bg-slate-100">
+													<div className="flex flex-col items-center justify-center pt-2 pb-3">
+														{isUploading ? (
+															<div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
+														) : (
+															<Upload className="mb-2 h-6 w-6 text-slate-400" />
+														)}
+														<p className="mb-1 text-slate-500 text-sm">
+															{isUploading
+																? "Uploading..."
+																: "Click to upload file"}
+														</p>
+														<p className="text-slate-400 text-xs">
+															(Direct to R2)
+														</p>
+													</div>
+													<input
+														className="hidden"
+														disabled={isUploading}
+														onChange={handleFileUpload}
+														type="file"
+													/>
+												</label>
+											</div>
 										</div>
 									</div>
 								)}
@@ -346,11 +450,10 @@ export default function Home() {
 														</div>
 														<div className="flex items-center justify-end gap-2 border-slate-100 border-t pt-2 opacity-0 transition-opacity group-hover:opacity-100">
 															<button
-																className={`flex items-center gap-1.5 rounded-md px-2 py-1 font-semibold text-xs transition-colors ${
-																	copiedId === item.id
-																		? "bg-teal-50 text-teal-600"
-																		: "bg-slate-100 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600"
-																}`}
+																className={`flex items-center gap-1.5 rounded-md px-2 py-1 font-semibold text-xs transition-colors ${copiedId === item.id
+																	? "bg-teal-50 text-teal-600"
+																	: "bg-slate-100 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600"
+																	}`}
 																onClick={() =>
 																	handleCopyItem(item.content, item.id)
 																}
@@ -431,22 +534,20 @@ export default function Home() {
 							{/* Modal Tabs */}
 							<div className="flex border-slate-100 border-b bg-slate-50/50">
 								<button
-									className={`flex-1 py-4 font-semibold text-sm transition-colors ${
-										helpTab === "guide"
-											? "border-indigo-600 border-b-2 text-indigo-600"
-											: "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
-									}`}
+									className={`flex-1 py-4 font-semibold text-sm transition-colors ${helpTab === "guide"
+										? "border-indigo-600 border-b-2 text-indigo-600"
+										: "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+										}`}
 									onClick={() => setHelpTab("guide")}
 									type="button"
 								>
 									{t("tabGuide")}
 								</button>
 								<button
-									className={`flex-1 py-4 font-semibold text-sm transition-colors ${
-										helpTab === "ios"
-											? "border-indigo-600 border-b-2 text-indigo-600"
-											: "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
-									}`}
+									className={`flex-1 py-4 font-semibold text-sm transition-colors ${helpTab === "ios"
+										? "border-indigo-600 border-b-2 text-indigo-600"
+										: "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+										}`}
 									onClick={() => setHelpTab("ios")}
 									type="button"
 								>
