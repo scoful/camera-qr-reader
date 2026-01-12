@@ -44,6 +44,24 @@
 		"shortcut2Sub": "Beam Helper",
 		"shortcut2Desc": "Convert your iPhone clipboard text into a QR code instantly for this website to scan.",
 		"getShortcut": "Get Shortcut",
-		"openDirectLink": "Open Direct Link"
+		"openDirectLink": "Open Direct Link",
+		"inputLabel": "Enter Text or URL",
+		"orUpload": "OR UPLOAD FILE",
+		"uploading": "Uploading to Cloud...",
+		"clickToUpload": "Click to upload file",
+		"uploadHint": "Supports images, PDFs, videos (Max 50MB)",
+		"generatedQrTitle": "Generated QR",
+		"resultPlaceholder": "Result will appear here",
+		"toastInvalidPassword": "Invalid password",
+		"toastVerificationFailed": "Verification failed",
+		"toastValidationError": "Validation error",
+		"toastUploadFailed": "Upload failed. Please check console for details.",
+		"toastFileSizeLimit": "File size exceeds 50MB limit.",
+		"authModalTitle": "Authorization",
+		"authModalDesc": "Please enter the access password to upload files.",
+		"authModalPlaceholder": "Enter password...",
+		"commonCancel": "Cancel",
+		"commonConfirm": "Confirm",
+		"commonClose": "Close"
 	}
 }

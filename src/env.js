@@ -13,6 +13,7 @@ export const env = createEnv({
 		R2_SECRET_ACCESS_KEY: z.string(),
 		R2_BUCKET_NAME: z.string(),
 		R2_PUBLIC_DOMAIN: z.string().optional(),
+		ACCESS_PASSWORD: z.string().optional(), // Optional to allow usage without password if desired, or strictly require it.
 	},
 
 	/**
@@ -35,6 +36,7 @@ export const env = createEnv({
 		R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY,
 		R2_BUCKET_NAME: process.env.R2_BUCKET_NAME,
 		R2_PUBLIC_DOMAIN: process.env.R2_PUBLIC_DOMAIN,
+		ACCESS_PASSWORD: process.env.ACCESS_PASSWORD,
 		// NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
 	},
 	/**

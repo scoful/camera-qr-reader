@@ -44,6 +44,24 @@
 		"shortcut2Sub": "传图助手",
 		"shortcut2Desc": "将您的 iPhone 剪贴板文本即时转换为二维码，供网页端扫描读取。",
 		"getShortcut": "获取指令",
-		"openDirectLink": "打开直链"
+		"openDirectLink": "打开直链",
+		"inputLabel": "输入文本或 URL",
+		"orUpload": "或上传文件",
+		"uploading": "正在加密上传...",
+		"clickToUpload": "点击选择文件",
+		"uploadHint": "支持图片、PDF、视频等 (上限 50MB)",
+		"generatedQrTitle": "生成结果",
+		"resultPlaceholder": "二维码将显示在这里",
+		"toastInvalidPassword": "密码错误",
+		"toastVerificationFailed": "验证失败",
+		"toastValidationError": "验证错误",
+		"toastUploadFailed": "上传失败，请检查控制台详情",
+		"toastFileSizeLimit": "文件大小超过 50MB 限制",
+		"authModalTitle": "权限认证",
+		"authModalDesc": "请输入访问密码以继续上传文件。",
+		"authModalPlaceholder": "请输入密码...",
+		"commonCancel": "取消",
+		"commonConfirm": "确认",
+		"commonClose": "关闭"
 	}
 }

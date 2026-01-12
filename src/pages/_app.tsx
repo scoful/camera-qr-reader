@@ -1,6 +1,7 @@
 import type { AppType } from "next/app";
 import { useRouter } from "next/router";
 import { type AbstractIntlMessages, NextIntlClientProvider } from "next-intl";
+import { Toaster } from "sonner";
 
 import "@/styles/globals.css";
 
@@ -17,6 +18,7 @@ const MyApp: AppType<{ messages: AbstractIntlMessages }> = ({
 			timeZone="Asia/Shanghai"
 		>
 			<Component {...pageProps} />
+			<Toaster position="top-center" richColors />
 		</NextIntlClientProvider>
 	);
 };

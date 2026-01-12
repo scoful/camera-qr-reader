@@ -7,6 +7,7 @@ import {
 	HelpCircle,
 	History,
 	Link as LinkIcon,
+	Lock,
 	QrCode,
 	Trash2,
 	Upload,
@@ -18,7 +19,8 @@ import type { GetStaticProps } from "next";
 import Head from "next/head";
 import { useTranslations } from "next-intl";
 import { QRCodeSVG } from "qrcode.react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import QrScanner from "@/components/QrScanner";
 import versionInfo from "../../version.json";
 
@@ -41,6 +43,12 @@ export default function Home() {
 	const [copiedId, setCopiedId] = useState<string | null>(null);
 	const [showHelpModal, setShowHelpModal] = useState(false);
 	const [helpTab, setHelpTab] = useState<"guide" | "ios">("guide");
+
+	// Auth State
+	const [showPasswordModal, setShowPasswordModal] = useState(false);
+	const [passwordInput, setPasswordInput] = useState("");
+	const pendingFileRef = useRef<File | null>(null);
+	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	// Lock body scroll when modal is open
 	useEffect(() => {
@@ -103,30 +111,38 @@ export default function Home() {
 		setGeneratedQrValue(e.target.value);
 	};
 
-	const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-		const file = e.target.files?.[0];
-		if (!file) return;
-
-		// 1. Frontend Size Check (50MB)
-		const MAX_SIZE = 50 * 1024 * 1024;
-		if (file.size > MAX_SIZE) {
-			alert("File size exceeds 50MB limit.");
-			return;
-		}
-
+	// Upload Logic (Abstracted)
+	const continueUpload = async (file: File, password?: string) => {
 		setIsUploading(true);
 		try {
 			// 2. Get Presigned PUT URL
+			const headers: Record<string, string> = {
+				"Content-Type": "application/json",
+			};
+			if (password) {
+				headers["x-access-password"] = password;
+			}
+
 			const putRes = await fetch("/api/r2/presign", {
 				method: "POST",
-				headers: { "Content-Type": "application/json" },
+				headers,
 				body: JSON.stringify({
 					action: "put",
 					key: file.name,
 					contentType: file.type,
-					size: file.size, // Send size to backend for validation
+					size: file.size,
 				}),
 			});
+
+			if (putRes.status === 401) {
+				// Password invalid or missing during request
+				localStorage.removeItem("access_password"); // Clear invalid password
+				pendingFileRef.current = file; // Re-queue file
+				setShowPasswordModal(true); // Ask again
+				setIsUploading(false);
+				return;
+			}
+
 			if (!putRes.ok) throw new Error("Failed to get upload URL");
 			const { url: putUrl, key } = await putRes.json();
 
@@ -145,31 +161,101 @@ export default function Home() {
 				window.location.hostname === "127.0.0.1";
 
 			if (isLocal) {
-				// Local Dev: Fetch raw R2 Presigned URL (Long but accessible by phone)
-				// Because 'localhost' in a QR code won't open on the phone.
 				const getRes = await fetch("/api/r2/presign", {
 					method: "POST",
-					headers: { "Content-Type": "application/json" },
+					headers, // Pass auth header again
 					body: JSON.stringify({ action: "get", key }),
 				});
 				if (!getRes.ok) throw new Error("Failed to get download URL");
 				const { url } = await getRes.json();
 				finalQrValue = url;
 			} else {
-				// Production: Use Short Redirect URL
 				finalQrValue = `${window.location.origin}/api/r2/download?key=${encodeURIComponent(
 					key,
 				)}`;
 			}
 
-			// 4. Update QR
 			setGeneratedQrValue(finalQrValue);
 			setInputUrl(finalQrValue);
+			pendingFileRef.current = null; // Clear pending file on success
 		} catch (err) {
 			console.error("Upload failed", err);
-			alert("Upload failed. Please check console for details.");
+			toast.error(t("toastUploadFailed"));
 		} finally {
 			setIsUploading(false);
+		}
+	};
+
+	const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		if (!file) return;
+
+		// 1. Frontend Size Check (50MB)
+		const MAX_SIZE = 50 * 1024 * 1024;
+		if (file.size > MAX_SIZE) {
+			toast.error(t("toastFileSizeLimit"));
+			e.target.value = ""; // Reset input
+			return;
+		}
+
+		// Check Password
+		const storedPwd = localStorage.getItem("access_password");
+		if (storedPwd) {
+			await continueUpload(file, storedPwd);
+		} else {
+			// No password, open modal
+			pendingFileRef.current = file;
+			setShowPasswordModal(true);
+		}
+
+		// Reset input so same file can be selected again if needed
+		e.target.value = "";
+	};
+
+	const handlePasswordSubmit = async () => {
+		if (!passwordInput) return;
+
+		try {
+			// Pre-validate password
+			const res = await fetch("/api/r2/presign", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					"x-access-password": passwordInput,
+				},
+				body: JSON.stringify({ action: "verify", key: "auth-check" }),
+			});
+
+			if (res.status === 401) {
+				toast.error(t("toastInvalidPassword"));
+				return;
+			}
+			if (!res.ok) throw new Error("Verification failed");
+
+			// Success
+			localStorage.setItem("access_password", passwordInput);
+			setShowPasswordModal(false);
+
+			// Logic resumption
+			if (pendingFileRef.current) {
+				continueUpload(pendingFileRef.current, passwordInput);
+			} else {
+				fileInputRef.current?.click();
+			}
+		} catch (err) {
+			console.error(err);
+			toast.error(t("toastValidationError"));
+		}
+	};
+
+	const handleUploadClick = () => {
+		if (isUploading) return;
+
+		const storedPwd = localStorage.getItem("access_password");
+		if (storedPwd) {
+			fileInputRef.current?.click();
+		} else {
+			setShowPasswordModal(true);
 		}
 	};
 
@@ -229,6 +315,7 @@ export default function Home() {
 								</p>
 							</div>
 						</div>
+
 						<a
 							className="flex items-center gap-2 rounded-full bg-white px-4 py-2 font-medium text-slate-600 text-sm shadow-sm ring-1 ring-slate-200 transition-all hover:bg-slate-50 hover:text-slate-900"
 							href="https://github.com/scoful/camera-qr-reader"
@@ -244,10 +331,11 @@ export default function Home() {
 					<div className="mb-8 flex justify-center">
 						<div className="flex w-fit rounded-full bg-white/60 p-1.5 ring-1 ring-black/5 backdrop-blur-md">
 							<button
-								className={`flex items-center gap-2 rounded-full px-8 py-3 font-semibold text-sm transition-all duration-300 ${activeTab === "scan"
-									? "bg-indigo-600 text-white shadow-indigo-500/25 shadow-md"
-									: "text-slate-500 hover:bg-white/50 hover:text-slate-700"
-									}`}
+								className={`flex items-center gap-2 rounded-full px-8 py-3 font-semibold text-sm transition-all duration-300 ${
+									activeTab === "scan"
+										? "bg-indigo-600 text-white shadow-indigo-500/25 shadow-md"
+										: "text-slate-500 hover:bg-white/50 hover:text-slate-700"
+								}`}
 								onClick={() => setActiveTab("scan")}
 								type="button"
 							>
@@ -255,10 +343,11 @@ export default function Home() {
 								{t("tabScan")}
 							</button>
 							<button
-								className={`flex items-center gap-2 rounded-full px-8 py-3 font-semibold text-sm transition-all duration-300 ${activeTab === "generate"
-									? "bg-indigo-600 text-white shadow-indigo-500/25 shadow-md"
-									: "text-slate-500 hover:bg-white/50 hover:text-slate-700"
-									}`}
+								className={`flex items-center gap-2 rounded-full px-8 py-3 font-semibold text-sm transition-all duration-300 ${
+									activeTab === "generate"
+										? "bg-indigo-600 text-white shadow-indigo-500/25 shadow-md"
+										: "text-slate-500 hover:bg-white/50 hover:text-slate-700"
+								}`}
 								onClick={() => setActiveTab("generate")}
 								type="button"
 							>
@@ -317,73 +406,73 @@ export default function Home() {
 								) : (
 									<div className="h flex flex-1 flex-col items-center justify-center p-12">
 										<div className="w-full max-w-sm">
-											<div className="mb-8 overflow-hidden rounded-2xl border-2 border-indigo-100 bg-white p-6 shadow-sm">
-												{generatedQrValue ? (
-													<QRCodeSVG
-														className="h-full w-full"
-														id="generated-qr-code"
-														includeMargin
-														level="H"
-														size={300}
-														value={generatedQrValue}
-													/>
-												) : (
-													<div className="flex aspect-square items-center justify-center rounded-lg bg-slate-50 text-slate-300">
-														<QrCode className="h-16 w-16 opacity-50" />
-													</div>
-												)}
-											</div>
-
 											<div className="flex flex-col gap-4">
-												<input
-													className="w-full rounded-xl border border-slate-200 bg-white/50 px-4 py-3 font-medium text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10"
-													onChange={handleGenerateChange}
-													placeholder={t("inputPlaceholder")}
-													type="text"
-													value={inputUrl}
-												/>
-												<button
-													className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3.5 font-bold text-white shadow-indigo-500/20 shadow-lg transition-all hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
-													disabled={!generatedQrValue}
-													onClick={downloadQrCode}
-													type="button"
-												>
-													{t("downloadPng")}
-												</button>
+												{/* Input Field */}
+												<div>
+													<label
+														className="mb-2 block font-semibold text-slate-700 text-sm"
+														htmlFor="urlInput"
+													>
+														{t("inputLabel")}
+													</label>
+													<input
+														className="w-full rounded-xl border border-slate-200 bg-white/50 px-4 py-3 font-medium text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10"
+														id="urlInput"
+														onChange={handleGenerateChange}
+														placeholder={t("inputPlaceholder")}
+														type="text"
+														value={inputUrl}
+													/>
+												</div>
 											</div>
 
-											<div className="relative flex items-center py-2">
-												<div className="grow border-t border-slate-200" />
+											<div className="relative flex items-center py-6">
+												<div className="grow border-slate-200 border-t" />
 												<span className="shrink-0 px-3 text-slate-400 text-xs uppercase">
-													OR
+													{t("orUpload")}
 												</span>
-												<div className="grow border-t border-slate-200" />
+												<div className="grow border-slate-200 border-t" />
 											</div>
 
+											{/* File Upload Area */}
 											<div>
-												<label className="flex w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 py-4 transition-colors hover:bg-slate-100">
-													<div className="flex flex-col items-center justify-center pt-2 pb-3">
+												{/* biome-ignore lint/a11y/useSemanticElements: Custom file upload trigger */}
+												<div
+													className="flex w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-slate-300 border-dashed bg-slate-50 py-8 transition-all hover:border-indigo-300 hover:bg-slate-100"
+													onClick={handleUploadClick}
+													onKeyDown={(e) => {
+														if (e.key === "Enter" || e.key === " ") {
+															handleUploadClick();
+														}
+													}}
+													role="button"
+													tabIndex={0}
+												>
+													<div className="flex flex-col items-center justify-center pt-2 pb-3 text-center">
 														{isUploading ? (
-															<div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
+															<div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
 														) : (
-															<Upload className="mb-2 h-6 w-6 text-slate-400" />
+															<div className="mb-3 rounded-full bg-white p-3 shadow-sm ring-1 ring-slate-200">
+																<Upload className="h-6 w-6 text-indigo-500" />
+															</div>
 														)}
-														<p className="mb-1 text-slate-500 text-sm">
+														<p className="mb-1 font-medium text-slate-700">
 															{isUploading
-																? "Uploading..."
-																: "Click to upload file"}
+																? t("uploading")
+																: t("clickToUpload")}
 														</p>
-														<p className="text-slate-400 text-xs">
-															(Direct to R2)
+														<p className="max-w-[200px] text-slate-400 text-xs">
+															{t("uploadHint")}
 														</p>
 													</div>
 													<input
 														className="hidden"
 														disabled={isUploading}
 														onChange={handleFileUpload}
+														ref={fileInputRef}
 														type="file"
 													/>
-												</label>
+												</div>
 											</div>
 										</div>
 									</div>
@@ -391,8 +480,48 @@ export default function Home() {
 							</div>
 						</div>
 
-						{/* Right Column: Scan History Only */}
+						{/* Right Column: Scan History OR Generated Result */}
 						<div className="flex flex-col gap-6 lg:col-span-5">
+							{activeTab === "generate" && (
+								<div className="flex flex-col overflow-hidden rounded-[2rem] border border-white/40 bg-white/60 shadow-indigo-100/50 shadow-xl backdrop-blur-xl">
+									<div className="flex items-center justify-between border-slate-100 border-b bg-white/30 px-6 py-4 backdrop-blur-md">
+										<h3 className="flex items-center gap-2 font-bold text-lg text-slate-800">
+											<QrCode className="h-5 w-5 text-indigo-500" />
+											{t("generatedQrTitle")}
+										</h3>
+									</div>
+									<div className="flex flex-1 flex-col items-center justify-center p-8 text-center">
+										<div className="mb-8 w-full max-w-[280px] overflow-hidden rounded-2xl border-2 border-indigo-100 bg-white p-4 shadow-sm">
+											{generatedQrValue ? (
+												<QRCodeSVG
+													className="h-full w-full"
+													id="generated-qr-code"
+													includeMargin
+													level="H"
+													size={300}
+													value={generatedQrValue}
+												/>
+											) : (
+												<div className="flex aspect-square flex-col items-center justify-center gap-4 rounded-xl bg-slate-50">
+													<QrCode className="h-16 w-16 text-slate-200" />
+													<p className="font-medium text-slate-400 text-sm">
+														{t("resultPlaceholder")}
+													</p>
+												</div>
+											)}
+										</div>
+										<button
+											className="flex w-full max-w-[280px] items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3.5 font-bold text-white shadow-indigo-500/20 shadow-lg transition-all hover:bg-indigo-700 disabled:opacity-50 disabled:shadow-none"
+											disabled={!generatedQrValue}
+											onClick={downloadQrCode}
+											type="button"
+										>
+											{t("downloadPng")}
+										</button>
+									</div>
+								</div>
+							)}
+
 							{activeTab === "scan" && (
 								<div className="flex flex-col overflow-hidden rounded-[2rem] border border-white/40 bg-white/60 shadow-indigo-100/50 shadow-xl backdrop-blur-xl">
 									<div className="flex items-center justify-between border-slate-100 border-b bg-white/30 px-6 py-4 backdrop-blur-md">
@@ -450,10 +579,11 @@ export default function Home() {
 														</div>
 														<div className="flex items-center justify-end gap-2 border-slate-100 border-t pt-2 opacity-0 transition-opacity group-hover:opacity-100">
 															<button
-																className={`flex items-center gap-1.5 rounded-md px-2 py-1 font-semibold text-xs transition-colors ${copiedId === item.id
-																	? "bg-teal-50 text-teal-600"
-																	: "bg-slate-100 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600"
-																	}`}
+																className={`flex items-center gap-1.5 rounded-md px-2 py-1 font-semibold text-xs transition-colors ${
+																	copiedId === item.id
+																		? "bg-teal-50 text-teal-600"
+																		: "bg-slate-100 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600"
+																}`}
 																onClick={() =>
 																	handleCopyItem(item.content, item.id)
 																}
@@ -534,20 +664,22 @@ export default function Home() {
 							{/* Modal Tabs */}
 							<div className="flex border-slate-100 border-b bg-slate-50/50">
 								<button
-									className={`flex-1 py-4 font-semibold text-sm transition-colors ${helpTab === "guide"
-										? "border-indigo-600 border-b-2 text-indigo-600"
-										: "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
-										}`}
+									className={`flex-1 py-4 font-semibold text-sm transition-colors ${
+										helpTab === "guide"
+											? "border-indigo-600 border-b-2 text-indigo-600"
+											: "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+									}`}
 									onClick={() => setHelpTab("guide")}
 									type="button"
 								>
 									{t("tabGuide")}
 								</button>
 								<button
-									className={`flex-1 py-4 font-semibold text-sm transition-colors ${helpTab === "ios"
-										? "border-indigo-600 border-b-2 text-indigo-600"
-										: "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
-										}`}
+									className={`flex-1 py-4 font-semibold text-sm transition-colors ${
+										helpTab === "ios"
+											? "border-indigo-600 border-b-2 text-indigo-600"
+											: "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+									}`}
 									onClick={() => setHelpTab("ios")}
 									type="button"
 								>
@@ -709,7 +841,75 @@ export default function Home() {
 					background: #94a3b8;
 				}
 			`}</style>
+			{/* Password Modal */}
+			<PasswordModal
+				isOpen={showPasswordModal}
+				onChange={setPasswordInput}
+				onClose={() => {
+					setShowPasswordModal(false);
+					pendingFileRef.current = null;
+				}}
+				onSubmit={handlePasswordSubmit}
+				value={passwordInput}
+			/>
 		</>
+	);
+}
+
+// Password Modal Component (Inline for simplicity, or could be extracted)
+function PasswordModal({
+	isOpen,
+	onClose,
+	onSubmit,
+	value,
+	onChange,
+}: {
+	isOpen: boolean;
+	onClose: () => void;
+	onSubmit: () => void;
+	value: string;
+	onChange: (val: string) => void;
+}) {
+	const t = useTranslations("Index");
+	if (!isOpen) return null;
+	return (
+		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+			<div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+				<div className="mb-4 flex items-center gap-3">
+					<div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
+						<Lock className="h-5 w-5" />
+					</div>
+					<h3 className="font-bold text-lg text-slate-800">
+						{t("authModalTitle")}
+					</h3>
+				</div>
+				<p className="mb-4 text-slate-500 text-sm">{t("authModalDesc")}</p>
+				<input
+					className="mb-4 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-medium text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10"
+					onChange={(e) => onChange(e.target.value)}
+					onKeyDown={(e) => e.key === "Enter" && onSubmit()}
+					placeholder={t("authModalPlaceholder")}
+					type="password"
+					value={value}
+				/>
+				<div className="flex justify-end gap-3">
+					<button
+						className="rounded-lg px-4 py-2 font-medium text-slate-500 hover:bg-slate-100"
+						onClick={onClose}
+						type="button"
+					>
+						{t("commonCancel")}
+					</button>
+					<button
+						className="rounded-lg bg-indigo-600 px-4 py-2 font-medium text-white shadow-indigo-500/20 shadow-lg hover:bg-indigo-700"
+						onClick={onSubmit}
+						type="button"
+					>
+						{t("commonConfirm")}
+					</button>
+				</div>
+			</div>
+		</div>
 	);
 }
 
