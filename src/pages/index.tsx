@@ -171,7 +171,7 @@ export default function Home() {
 				const { url } = await getRes.json();
 				finalQrValue = url;
 			} else {
-				finalQrValue = `${window.location.origin}/api/r2/download?key=${encodeURIComponent(
+				finalQrValue = `${window.location.origin}/download?key=${encodeURIComponent(
 					key,
 				)}`;
 			}

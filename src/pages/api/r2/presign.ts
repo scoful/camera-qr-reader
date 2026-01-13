@@ -39,19 +39,19 @@ export default async function handler(
 		return res.status(405).json({ message: "Method not allowed" });
 	}
 
-	// Auth Check
-	if (env.ACCESS_PASSWORD) {
-		const authHeader = req.headers["x-access-password"];
-		if (authHeader !== env.ACCESS_PASSWORD) {
-			return res
-				.status(401)
-				.json({ message: "Unauthorized: Invalid Password" });
-		}
-	}
-
 	try {
 		// Validate request body
 		const { action, key, contentType, size } = querySchema.parse(req.body);
+
+		// Auth Check (Skip for 'get' action to allow public downloads via shared links)
+		if (action !== "get" && env.ACCESS_PASSWORD) {
+			const authHeader = req.headers["x-access-password"];
+			if (authHeader !== env.ACCESS_PASSWORD) {
+				return res
+					.status(401)
+					.json({ message: "Unauthorized: Invalid Password" });
+			}
+		}
 
 		if (action === "verify") {
 			return res.status(200).json({ status: "ok" });
