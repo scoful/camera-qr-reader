@@ -22,6 +22,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import QrScanner from "@/components/QrScanner";
+import { MAX_UPLOAD_SIZE } from "@/config/constants";
 import versionInfo from "../../version.json";
 
 interface ScanHistoryItem {
@@ -191,8 +192,7 @@ export default function Home() {
 		if (!file) return;
 
 		// 1. Frontend Size Check (50MB)
-		const MAX_SIZE = 50 * 1024 * 1024;
-		if (file.size > MAX_SIZE) {
+		if (file.size > MAX_UPLOAD_SIZE) {
 			toast.error(t("toastFileSizeLimit"));
 			e.target.value = ""; // Reset input
 			return;

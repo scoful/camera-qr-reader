@@ -6,6 +6,11 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { z } from "zod";
+import {
+	DOWNLOAD_URL_EXPIRATION,
+	MAX_UPLOAD_SIZE,
+	UPLOAD_URL_EXPIRATION,
+} from "@/config/constants";
 import { env } from "@/env";
 
 // Initialize S3 Client
@@ -25,8 +30,6 @@ const querySchema = z.object({
 	contentType: z.string().optional(),
 	size: z.number().optional(),
 });
-
-const MAX_SIZE_BYTES = 50 * 1024 * 1024; // 50MB
 
 export default async function handler(
 	req: NextApiRequest,
@@ -57,24 +60,38 @@ export default async function handler(
 		let signedUrl = "";
 
 		if (action === "put") {
-			// Validate size
-			if (size && size > MAX_SIZE_BYTES) {
+			// Validate size (Strict: Must be present for PUT)
+			if (!size) {
+				return res
+					.status(400)
+					.json({ message: "File size is required for upload" });
+			}
+			if (size > MAX_UPLOAD_SIZE) {
 				return res.status(400).json({
-					message: `File size exceeds limit of ${MAX_SIZE_BYTES / 1024 / 1024}MB`,
+					message: `File size exceeds limit of ${MAX_UPLOAD_SIZE / 1024 / 1024}MB`,
 				});
 			}
 
 			// 1. Generate Upload URL (Presigned PUT)
+			// Prepend timestamp to prevent overwrites
+			const timestamp = Date.now();
+			const finalKey = `${timestamp}-${key}`;
+
 			// Expire in 5 minutes (300 seconds)
 			const command = new PutObjectCommand({
 				Bucket: env.R2_BUCKET_NAME,
-				Key: key,
+				Key: finalKey,
 				ContentType: contentType || "application/octet-stream",
 			});
-			signedUrl = await getSignedUrl(S3, command, { expiresIn: 300 });
+			signedUrl = await getSignedUrl(S3, command, {
+				expiresIn: UPLOAD_URL_EXPIRATION,
+			});
+
+			// Return the modified key so the client knows what to request later
+			return res.status(200).json({ url: signedUrl, key: finalKey });
 		} else if (action === "get") {
 			// 2. Generate Download URL (Presigned GET)
-			// Expire in 1 day (86400 seconds)
+			// Expire in 5 minutes (300 seconds) - same as upload
 
 			if (env.R2_PUBLIC_DOMAIN) {
 				// If Custom Domain is set, use it directly
@@ -88,7 +105,9 @@ export default async function handler(
 					Bucket: env.R2_BUCKET_NAME,
 					Key: key,
 				});
-				signedUrl = await getSignedUrl(S3, command, { expiresIn: 300 });
+				signedUrl = await getSignedUrl(S3, command, {
+					expiresIn: DOWNLOAD_URL_EXPIRATION,
+				});
 			}
 		}
 
