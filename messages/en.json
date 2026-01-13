@@ -1,4 +1,18 @@
 {
+	"Download": {
+		"title": "Preview & Download - Camera QR",
+		"loadError": "Failed to load image. It may have expired.",
+		"retry": "Retry",
+		"rotateTitle": "Rotate 90°",
+		"invertTitle": "Invert Colors",
+		"grayscaleTitle": "Grayscale",
+		"grayscaleLabel": "B&W",
+		"downloadOriginal": "Original",
+		"saveEdited": "Save Edited",
+		"saveSuccess": "Image saved!",
+		"saveError": "Failed to save. Check R2 CORS settings.",
+		"expiredError": "Link expired or invalid"
+	},
 	"Index": {
 		"title": "Camera QR Reader",
 		"metaDescription": "Modern & Professional QR Tool",

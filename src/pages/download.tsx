@@ -9,10 +9,12 @@ import {
 import type { GetServerSideProps } from "next";
 import Head from "next/head";
 import { useRouter } from "next/router";
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 export default function DownloadPage() {
+	const t = useTranslations("Download");
 	const router = useRouter();
 	const { key } = router.query;
 	const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -40,18 +42,18 @@ export default function DownloadPage() {
 					body: JSON.stringify({ action: "get", key: key as string }),
 				});
 
-				if (!res.ok) throw new Error("Link expired or invalid");
+				if (!res.ok) throw new Error(t("expiredError"));
 				const data = await res.json();
 				setImageUrl(data.url);
 			} catch (_err) {
-				setError("Failed to load image. It may have expired.");
+				setError(t("loadError"));
 			} finally {
 				setLoading(false);
 			}
 		};
 
 		fetchUrl();
-	}, [router.isReady, key]);
+	}, [router.isReady, key, t]);
 
 	// Filter Styles for Preview
 	const filterStyle = {
@@ -98,14 +100,24 @@ export default function DownloadPage() {
 			link.download = `edited-${key}`;
 			link.href = canvas.toDataURL("image/png");
 			link.click();
-			toast.success("Image saved!");
+			toast.success(t("saveSuccess"));
 		} catch (err) {
 			console.error(err);
-			toast.error("Failed to save. Check R2 CORS settings.");
+			toast.error(t("saveError"));
 		}
 	};
 
 	const handleRotate = () => setRotation((prev) => (prev + 90) % 360);
+
+	// Download Original Image (via Custom Domain + Transform Rule)
+	const handleDownloadOriginal = () => {
+		if (!imageUrl) return;
+		// Add download=true param to trigger Cloudflare Transform Rule
+		const downloadUrl = imageUrl.includes("?")
+			? `${imageUrl}&download=true`
+			: `${imageUrl}?download=true`;
+		window.location.href = downloadUrl;
+	};
 
 	if (loading) {
 		return (
@@ -127,7 +139,7 @@ export default function DownloadPage() {
 					onClick={() => router.reload()}
 					type="button"
 				>
-					Retry
+					{t("retry")}
 				</button>
 			</div>
 		);
@@ -136,16 +148,14 @@ export default function DownloadPage() {
 	return (
 		<>
 			<Head>
-				<title>Preview & Download - Camera QR</title>
+				<title>{t("title")}</title>
 			</Head>
 			<div className="flex min-h-screen flex-col items-center justify-center bg-slate-900 p-4 md:p-8">
 				{/* Image Container */}
-				<div
+				<button
 					className="group relative flex w-full max-w-5xl flex-1 cursor-zoom-in items-center justify-center overflow-hidden rounded-2xl border border-slate-800/50 bg-slate-950/50 shadow-2xl backdrop-blur-sm transition-transform active:scale-[0.99]"
 					onClick={() => setIsZoomed(true)}
-					onKeyDown={(e) => e.key === "Enter" && setIsZoomed(true)}
-					role="button"
-					tabIndex={0}
+					type="button"
 				>
 					{/* Grid Background Pattern */}
 					<div
@@ -164,28 +174,29 @@ export default function DownloadPage() {
 					<img
 						alt="Preview"
 						className="relative z-10 max-h-[70vh] max-w-full object-contain shadow-2xl"
+						crossOrigin="anonymous"
 						ref={imageRef}
 						src={imageUrl || ""}
 						style={filterStyle}
 					/>
-				</div>
+				</button>
 
 				{/* Zoom Modal (Lightbox) */}
 				{isZoomed && (
-					<div
+					<button
 						className="fade-in fixed inset-0 z-50 flex animate-in cursor-zoom-out items-center justify-center bg-black/95 backdrop-blur-md duration-200"
 						onClick={() => setIsZoomed(false)}
 						onKeyDown={(e) => e.key === "Escape" && setIsZoomed(false)}
-						role="button"
-						tabIndex={0}
+						type="button"
 					>
 						<img
 							alt="Zoomed Preview"
 							className="max-h-[95vh] max-w-[95vw] object-contain shadow-2xl transition-all duration-300"
+							crossOrigin="anonymous"
 							src={imageUrl || ""}
 							style={filterStyle}
 						/>
-					</div>
+					</button>
 				)}
 
 				{/* Toolbar */}
@@ -194,7 +205,7 @@ export default function DownloadPage() {
 					<button
 						className="group flex h-12 w-12 items-center justify-center rounded-xl bg-slate-800 text-slate-300 transition-all hover:bg-indigo-600 hover:text-white"
 						onClick={handleRotate}
-						title="Rotate 90°"
+						title={t("rotateTitle")}
 						type="button"
 					>
 						<RotateCw className="h-5 w-5 transition-transform group-hover:rotate-90" />
@@ -208,7 +219,7 @@ export default function DownloadPage() {
 								: "bg-slate-800 text-slate-300 hover:bg-indigo-600 hover:text-white"
 						}`}
 						onClick={() => setInvert(!invert)}
-						title="Invert Colors"
+						title={t("invertTitle")}
 						type="button"
 					>
 						{invert ? (
@@ -226,25 +237,23 @@ export default function DownloadPage() {
 								: "bg-slate-800 text-slate-300 hover:bg-indigo-600 hover:text-white"
 						}`}
 						onClick={() => setGrayscale(!grayscale)}
-						title="Grayscale"
+						title={t("grayscaleTitle")}
 						type="button"
 					>
-						<span className="font-bold text-sm">B&W</span>
+						<span className="font-bold text-sm">{t("grayscaleLabel")}</span>
 					</button>
 
 					<div className="mx-2 h-8 w-px bg-slate-700" />
 
 					{/* Download Original */}
-					<a
+					<button
 						className="hidden items-center gap-2 rounded-xl border border-slate-700 bg-transparent px-4 py-3 font-medium text-slate-300 transition-colors hover:border-slate-600 hover:bg-slate-800 md:flex"
-						download
-						href={imageUrl || "#"}
-						rel="noopener noreferrer"
-						target="_blank"
+						onClick={handleDownloadOriginal}
+						type="button"
 					>
 						<Download className="h-4 w-4" />
-						Original
-					</a>
+						{t("downloadOriginal")}
+					</button>
 
 					{/* Save Edited */}
 					<button
@@ -253,7 +262,7 @@ export default function DownloadPage() {
 						type="button"
 					>
 						<Download className="h-4 w-4" />
-						Save Edited
+						{t("saveEdited")}
 					</button>
 				</div>
 			</div>

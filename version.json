@@ -1,7 +1,7 @@
 {
-  "version": "0.0.20",
-  "buildTime": "2026-01-13T13:45:51.916Z",
-  "gitCommit": "ce2940b",
+  "version": "0.0.21",
+  "buildTime": "2026-01-13T15:55:51.733Z",
+  "gitCommit": "136c11e",
   "gitBranch": "main",
   "environment": "development"
 }

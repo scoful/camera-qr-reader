@@ -1,4 +1,18 @@
 {
+	"Download": {
+		"title": "预览与下载 - Camera QR",
+		"loadError": "加载图片失败，链接可能已过期。",
+		"retry": "重试",
+		"rotateTitle": "旋转 90°",
+		"invertTitle": "反色",
+		"grayscaleTitle": "黑白",
+		"grayscaleLabel": "黑白",
+		"downloadOriginal": "原图",
+		"saveEdited": "保存编辑",
+		"saveSuccess": "图片已保存！",
+		"saveError": "保存失败，请检查 R2 CORS 设置。",
+		"expiredError": "链接过期或无效"
+	},
 	"Index": {
 		"title": "摄像头二维码扫描器",
 		"metaDescription": "现代专业的二维码工具",

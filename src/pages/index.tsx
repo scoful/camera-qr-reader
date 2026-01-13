@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import type { GetStaticProps } from "next";
 import Head from "next/head";
+import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
 import { QRCodeSVG } from "qrcode.react";
 import { useEffect, useRef, useState } from "react";
@@ -34,6 +35,7 @@ interface ScanHistoryItem {
 
 export default function Home() {
 	const t = useTranslations("Index");
+	const router = useRouter();
 	const [activeTab, setActiveTab] = useState<"scan" | "generate">("scan");
 	const [scanHistory, setScanHistory] = useState<ScanHistoryItem[]>([]);
 	const [isScanning, setIsScanning] = useState(false);
@@ -171,7 +173,11 @@ export default function Home() {
 				const { url } = await getRes.json();
 				finalQrValue = url;
 			} else {
-				finalQrValue = `${window.location.origin}/download?key=${encodeURIComponent(
+				const localePart =
+					router.locale && router.locale !== router.defaultLocale
+						? `/${router.locale}`
+						: "";
+				finalQrValue = `${window.location.origin}${localePart}/download?key=${encodeURIComponent(
 					key,
 				)}`;
 			}

@@ -1,5 +1,4 @@
 import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { env } from "@/env";
 
@@ -30,29 +29,36 @@ export default async function handler(
 	}
 
 	try {
-		let signedUrl = "";
+		// Fetch the file from R2 and stream it to the client with download headers
+		const command = new GetObjectCommand({
+			Bucket: env.R2_BUCKET_NAME,
+			Key: key,
+		});
 
-		// Check if Custom Domain is configured for public access
-		if (env.R2_PUBLIC_DOMAIN) {
-			const baseUrl = env.R2_PUBLIC_DOMAIN.startsWith("http")
-				? env.R2_PUBLIC_DOMAIN
-				: `https://${env.R2_PUBLIC_DOMAIN}`;
-			signedUrl = `${baseUrl}/${key}`;
-			// If using custom domain, we might perform a 301/302 redirect directly
-			// or just 307 to preserve method if needed, but here it's GET.
-		} else {
-			// Expires in 5 minutes (300s) - sufficient for immediate scanning
-			const command = new GetObjectCommand({
-				Bucket: env.R2_BUCKET_NAME,
-				Key: key,
-			});
-			signedUrl = await getSignedUrl(S3, command, { expiresIn: 300 });
+		const response = await S3.send(command);
+
+		if (!response.Body) {
+			return res.status(404).json({ message: "File not found" });
 		}
 
-		// Redirect the user to the R2 URL
-		return res.redirect(307, signedUrl);
+		// Set headers for file download
+		const contentType = response.ContentType || "application/octet-stream";
+		const filename = key.split("/").pop() || "download";
+
+		res.setHeader("Content-Type", contentType);
+		res.setHeader(
+			"Content-Disposition",
+			`attachment; filename="${encodeURIComponent(filename)}"`,
+		);
+		if (response.ContentLength) {
+			res.setHeader("Content-Length", response.ContentLength.toString());
+		}
+
+		// Stream the file content to the response
+		const stream = response.Body as NodeJS.ReadableStream;
+		stream.pipe(res);
 	} catch (error) {
-		console.error("Download Redirect Error:", error);
+		console.error("Download Error:", error);
 		return res.status(500).json({ message: "Internal server error" });
 	}
 }
