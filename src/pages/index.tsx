@@ -6,6 +6,7 @@ import {
 	Github,
 	HelpCircle,
 	History,
+	Image as ImageIcon,
 	Link as LinkIcon,
 	Lock,
 	QrCode,
@@ -24,6 +25,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import QrScanner from "@/components/QrScanner";
 import { MAX_UPLOAD_SIZE } from "@/config/constants";
+import { env } from "@/env";
 import versionInfo from "../../version.json";
 
 interface ScanHistoryItem {
@@ -31,6 +33,8 @@ interface ScanHistoryItem {
 	content: string;
 	timestamp: Date;
 	isUrl: boolean;
+	isR2Image?: boolean; // Whether the URL is an R2 image that can be edited
+	r2Key?: string; // The R2 object key extracted from URL
 }
 
 export default function Home() {
@@ -75,15 +79,63 @@ export default function Home() {
 		}
 	};
 
-	const handleScanSuccess = (
+	// R2 domain pattern for detecting project-generated URLs
+	const R2_DOMAIN = env.NEXT_PUBLIC_R2_PUBLIC_DOMAIN;
+
+	// Extract R2 key from URL
+	const extractR2Key = (url: string): string | null => {
+		if (!R2_DOMAIN) return null; // Skip if not configured
+		try {
+			const urlObj = new URL(url);
+			if (urlObj.hostname === R2_DOMAIN) {
+				// URL format: https://{R2_DOMAIN}/{key}
+				return urlObj.pathname.slice(1); // Remove leading /
+			}
+		} catch {
+			// Not a valid URL
+		}
+		return null;
+	};
+
+	// Check if content type is an image
+	const isImageContentType = (contentType: string | null): boolean => {
+		if (!contentType) return false;
+		return contentType.startsWith("image/");
+	};
+
+	const handleScanSuccess = async (
 		decodedText: string,
 		_decodedResult: Html5QrcodeResult,
 	) => {
+		const itemIsUrl = isUrl(decodedText);
+		let isR2Image = false;
+		let r2Key: string | undefined;
+
+		// Check if it's an R2 URL and detect if it's an image
+		if (itemIsUrl) {
+			const extractedKey = extractR2Key(decodedText);
+			if (extractedKey) {
+				r2Key = extractedKey;
+				try {
+					// Use HEAD request to get Content-Type without downloading the file
+					const response = await fetch(decodedText, { method: "HEAD" });
+					if (response.ok) {
+						const contentType = response.headers.get("Content-Type");
+						isR2Image = isImageContentType(contentType);
+					}
+				} catch (err) {
+					console.error("Failed to detect R2 file type:", err);
+				}
+			}
+		}
+
 		const newItem: ScanHistoryItem = {
 			id: Date.now().toString(),
 			content: decodedText,
 			timestamp: new Date(),
-			isUrl: isUrl(decodedText),
+			isUrl: itemIsUrl,
+			isR2Image,
+			r2Key,
 		};
 		setScanHistory((prev) => [newItem, ...prev]);
 		setIsScanning(false);
@@ -157,30 +209,13 @@ export default function Home() {
 			});
 			if (!uploadRes.ok) throw new Error("Upload to R2 failed");
 
-			// 3. Generate QR Code Value
-			let finalQrValue = "";
-			const isLocal =
-				window.location.hostname === "localhost" ||
-				window.location.hostname === "127.0.0.1";
-
-			if (isLocal) {
-				const getRes = await fetch("/api/r2/presign", {
-					method: "POST",
-					headers, // Pass auth header again
-					body: JSON.stringify({ action: "get", key }),
-				});
-				if (!getRes.ok) throw new Error("Failed to get download URL");
-				const { url } = await getRes.json();
-				finalQrValue = url;
-			} else {
-				const localePart =
-					router.locale && router.locale !== router.defaultLocale
-						? `/${router.locale}`
-						: "";
-				finalQrValue = `${window.location.origin}${localePart}/download?key=${encodeURIComponent(
-					key,
-				)}`;
-			}
+			// 3. Generate QR Code Value - Directly construct R2 public URL
+			const publicDomain = env.NEXT_PUBLIC_R2_PUBLIC_DOMAIN;
+			if (!publicDomain) throw new Error("R2 public domain not configured");
+			const baseUrl = publicDomain.startsWith("http")
+				? publicDomain
+				: `https://${publicDomain}`;
+			const finalQrValue = `${baseUrl}/${key}`;
 
 			setGeneratedQrValue(finalQrValue);
 			setInputUrl(finalQrValue);
@@ -337,11 +372,10 @@ export default function Home() {
 					<div className="mb-8 flex justify-center">
 						<div className="flex w-fit rounded-full bg-white/60 p-1.5 ring-1 ring-black/5 backdrop-blur-md">
 							<button
-								className={`flex items-center gap-2 rounded-full px-8 py-3 font-semibold text-sm transition-all duration-300 ${
-									activeTab === "scan"
-										? "bg-indigo-600 text-white shadow-indigo-500/25 shadow-md"
-										: "text-slate-500 hover:bg-white/50 hover:text-slate-700"
-								}`}
+								className={`flex items-center gap-2 rounded-full px-8 py-3 font-semibold text-sm transition-all duration-300 ${activeTab === "scan"
+									? "bg-indigo-600 text-white shadow-indigo-500/25 shadow-md"
+									: "text-slate-500 hover:bg-white/50 hover:text-slate-700"
+									}`}
 								onClick={() => setActiveTab("scan")}
 								type="button"
 							>
@@ -349,11 +383,10 @@ export default function Home() {
 								{t("tabScan")}
 							</button>
 							<button
-								className={`flex items-center gap-2 rounded-full px-8 py-3 font-semibold text-sm transition-all duration-300 ${
-									activeTab === "generate"
-										? "bg-indigo-600 text-white shadow-indigo-500/25 shadow-md"
-										: "text-slate-500 hover:bg-white/50 hover:text-slate-700"
-								}`}
+								className={`flex items-center gap-2 rounded-full px-8 py-3 font-semibold text-sm transition-all duration-300 ${activeTab === "generate"
+									? "bg-indigo-600 text-white shadow-indigo-500/25 shadow-md"
+									: "text-slate-500 hover:bg-white/50 hover:text-slate-700"
+									}`}
 								onClick={() => setActiveTab("generate")}
 								type="button"
 							>
@@ -585,11 +618,10 @@ export default function Home() {
 														</div>
 														<div className="flex items-center justify-end gap-2 border-slate-100 border-t pt-2 opacity-0 transition-opacity group-hover:opacity-100">
 															<button
-																className={`flex items-center gap-1.5 rounded-md px-2 py-1 font-semibold text-xs transition-colors ${
-																	copiedId === item.id
-																		? "bg-teal-50 text-teal-600"
-																		: "bg-slate-100 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600"
-																}`}
+																className={`flex items-center gap-1.5 rounded-md px-2 py-1 font-semibold text-xs transition-colors ${copiedId === item.id
+																	? "bg-teal-50 text-teal-600"
+																	: "bg-slate-100 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600"
+																	}`}
 																onClick={() =>
 																	handleCopyItem(item.content, item.id)
 																}
@@ -614,6 +646,17 @@ export default function Home() {
 																>
 																	<LinkIcon className="h-3 w-3" />
 																	{t("open")}
+																</a>
+															)}
+															{item.isR2Image && item.r2Key && (
+																<a
+																	className="flex items-center gap-1.5 rounded-md bg-purple-50 px-2 py-1 font-bold text-purple-600 text-xs transition-colors hover:bg-purple-100"
+																	href={`${router.locale && router.locale !== router.defaultLocale ? `/${router.locale}` : ""}/download?key=${encodeURIComponent(item.r2Key)}`}
+																	rel="noopener noreferrer"
+																	target="_blank"
+																>
+																	<ImageIcon className="h-3 w-3" />
+																	{t("editImage")}
 																</a>
 															)}
 														</div>
@@ -670,22 +713,20 @@ export default function Home() {
 							{/* Modal Tabs */}
 							<div className="flex border-slate-100 border-b bg-slate-50/50">
 								<button
-									className={`flex-1 py-4 font-semibold text-sm transition-colors ${
-										helpTab === "guide"
-											? "border-indigo-600 border-b-2 text-indigo-600"
-											: "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
-									}`}
+									className={`flex-1 py-4 font-semibold text-sm transition-colors ${helpTab === "guide"
+										? "border-indigo-600 border-b-2 text-indigo-600"
+										: "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+										}`}
 									onClick={() => setHelpTab("guide")}
 									type="button"
 								>
 									{t("tabGuide")}
 								</button>
 								<button
-									className={`flex-1 py-4 font-semibold text-sm transition-colors ${
-										helpTab === "ios"
-											? "border-indigo-600 border-b-2 text-indigo-600"
-											: "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
-									}`}
+									className={`flex-1 py-4 font-semibold text-sm transition-colors ${helpTab === "ios"
+										? "border-indigo-600 border-b-2 text-indigo-600"
+										: "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+										}`}
 									onClick={() => setHelpTab("ios")}
 									type="button"
 								>

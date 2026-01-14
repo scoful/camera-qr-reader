@@ -107,7 +107,7 @@ export default function DownloadPage() {
 		}
 	};
 
-	const handleRotate = () => setRotation((prev) => (prev + 90) % 360);
+	const handleRotate = () => setRotation((prev) => prev + 90);
 
 	// Download Original Image (via Custom Domain + Transform Rule)
 	const handleDownloadOriginal = () => {

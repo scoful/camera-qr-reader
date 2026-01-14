@@ -22,7 +22,7 @@ export const env = createEnv({
 	 * `NEXT_PUBLIC_`.
 	 */
 	client: {
-		// NEXT_PUBLIC_CLIENTVAR: z.string(),
+		NEXT_PUBLIC_R2_PUBLIC_DOMAIN: z.string().optional(),
 	},
 
 	/**
@@ -37,7 +37,7 @@ export const env = createEnv({
 		R2_BUCKET_NAME: process.env.R2_BUCKET_NAME,
 		R2_PUBLIC_DOMAIN: process.env.R2_PUBLIC_DOMAIN,
 		ACCESS_PASSWORD: process.env.ACCESS_PASSWORD,
-		// NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
+		NEXT_PUBLIC_R2_PUBLIC_DOMAIN: process.env.NEXT_PUBLIC_R2_PUBLIC_DOMAIN,
 	},
 	/**
 	 * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

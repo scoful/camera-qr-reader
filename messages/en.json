@@ -76,6 +76,7 @@
 		"authModalPlaceholder": "Enter password...",
 		"commonCancel": "Cancel",
 		"commonConfirm": "Confirm",
-		"commonClose": "Close"
+		"commonClose": "Close",
+		"editImage": "Edit Image"
 	}
 }

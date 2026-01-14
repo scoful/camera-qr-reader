@@ -76,6 +76,7 @@
 		"authModalPlaceholder": "请输入密码...",
 		"commonCancel": "取消",
 		"commonConfirm": "确认",
-		"commonClose": "关闭"
+		"commonClose": "关闭",
+		"editImage": "编辑图片"
 	}
 }
