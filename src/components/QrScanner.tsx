@@ -106,6 +106,11 @@ export default function QrScanner({
 	return (
 		<div className="flex h-full w-full max-w-4xl items-center justify-center">
 			<style>{`
+				/* 隐藏库自带的 Stop Scanning 按钮，使用自定义按钮 */
+				#html5-qrcode-button-camera-stop {
+					display: none !important;
+				}
+
 				/* 容器样式 */
 				#qr-reader {
 					border: none !important;

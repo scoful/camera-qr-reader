@@ -73,9 +73,10 @@ export default async function handler(
 			}
 
 			// 1. Generate Upload URL (Presigned PUT)
-			// Prepend timestamp to prevent overwrites
+			// Use timestamp as key, append extension if present
 			const timestamp = Date.now();
-			const finalKey = `${timestamp}-${key}`;
+			const ext = key.includes(".") ? key.substring(key.lastIndexOf(".")) : "";
+			const finalKey = `${timestamp}${ext}`;
 
 			// Expire in 5 minutes (300 seconds)
 			const command = new PutObjectCommand({

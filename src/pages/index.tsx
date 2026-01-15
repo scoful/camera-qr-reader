@@ -372,10 +372,11 @@ export default function Home() {
 					<div className="mb-8 flex justify-center">
 						<div className="flex w-fit rounded-full bg-white/60 p-1.5 ring-1 ring-black/5 backdrop-blur-md">
 							<button
-								className={`flex items-center gap-2 rounded-full px-8 py-3 font-semibold text-sm transition-all duration-300 ${activeTab === "scan"
-									? "bg-indigo-600 text-white shadow-indigo-500/25 shadow-md"
-									: "text-slate-500 hover:bg-white/50 hover:text-slate-700"
-									}`}
+								className={`flex items-center gap-2 rounded-full px-8 py-3 font-semibold text-sm transition-all duration-300 ${
+									activeTab === "scan"
+										? "bg-indigo-600 text-white shadow-indigo-500/25 shadow-md"
+										: "text-slate-500 hover:bg-white/50 hover:text-slate-700"
+								}`}
 								onClick={() => setActiveTab("scan")}
 								type="button"
 							>
@@ -383,10 +384,11 @@ export default function Home() {
 								{t("tabScan")}
 							</button>
 							<button
-								className={`flex items-center gap-2 rounded-full px-8 py-3 font-semibold text-sm transition-all duration-300 ${activeTab === "generate"
-									? "bg-indigo-600 text-white shadow-indigo-500/25 shadow-md"
-									: "text-slate-500 hover:bg-white/50 hover:text-slate-700"
-									}`}
+								className={`flex items-center gap-2 rounded-full px-8 py-3 font-semibold text-sm transition-all duration-300 ${
+									activeTab === "generate"
+										? "bg-indigo-600 text-white shadow-indigo-500/25 shadow-md"
+										: "text-slate-500 hover:bg-white/50 hover:text-slate-700"
+								}`}
 								onClick={() => setActiveTab("generate")}
 								type="button"
 							>
@@ -618,10 +620,11 @@ export default function Home() {
 														</div>
 														<div className="flex items-center justify-end gap-2 border-slate-100 border-t pt-2 opacity-0 transition-opacity group-hover:opacity-100">
 															<button
-																className={`flex items-center gap-1.5 rounded-md px-2 py-1 font-semibold text-xs transition-colors ${copiedId === item.id
-																	? "bg-teal-50 text-teal-600"
-																	: "bg-slate-100 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600"
-																	}`}
+																className={`flex items-center gap-1.5 rounded-md px-2 py-1 font-semibold text-xs transition-colors ${
+																	copiedId === item.id
+																		? "bg-teal-50 text-teal-600"
+																		: "bg-slate-100 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600"
+																}`}
 																onClick={() =>
 																	handleCopyItem(item.content, item.id)
 																}
@@ -713,20 +716,22 @@ export default function Home() {
 							{/* Modal Tabs */}
 							<div className="flex border-slate-100 border-b bg-slate-50/50">
 								<button
-									className={`flex-1 py-4 font-semibold text-sm transition-colors ${helpTab === "guide"
-										? "border-indigo-600 border-b-2 text-indigo-600"
-										: "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
-										}`}
+									className={`flex-1 py-4 font-semibold text-sm transition-colors ${
+										helpTab === "guide"
+											? "border-indigo-600 border-b-2 text-indigo-600"
+											: "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+									}`}
 									onClick={() => setHelpTab("guide")}
 									type="button"
 								>
 									{t("tabGuide")}
 								</button>
 								<button
-									className={`flex-1 py-4 font-semibold text-sm transition-colors ${helpTab === "ios"
-										? "border-indigo-600 border-b-2 text-indigo-600"
-										: "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
-										}`}
+									className={`flex-1 py-4 font-semibold text-sm transition-colors ${
+										helpTab === "ios"
+											? "border-indigo-600 border-b-2 text-indigo-600"
+											: "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+									}`}
 									onClick={() => setHelpTab("ios")}
 									type="button"
 								>

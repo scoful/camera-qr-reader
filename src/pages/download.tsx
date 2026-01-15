@@ -12,6 +12,7 @@ import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { env } from "@/env";
 
 export default function DownloadPage() {
 	const t = useTranslations("Download");
@@ -29,6 +30,21 @@ export default function DownloadPage() {
 
 	// Refs
 	const imageRef = useRef<HTMLImageElement>(null);
+	const zoomModalRef = useRef<HTMLDivElement>(null);
+
+	// Lock body scroll when zoomed
+	useEffect(() => {
+		if (isZoomed) {
+			document.body.style.overflow = "hidden";
+			// Focus modal for keyboard events
+			zoomModalRef.current?.focus();
+		} else {
+			document.body.style.overflow = "unset";
+		}
+		return () => {
+			document.body.style.overflow = "unset";
+		};
+	}, [isZoomed]);
 
 	// Load Image URL
 	useEffect(() => {
@@ -36,6 +52,18 @@ export default function DownloadPage() {
 
 		const fetchUrl = async () => {
 			try {
+				// Optimization: If R2 public domain is configured, construct URL directly
+				const publicDomain = env.NEXT_PUBLIC_R2_PUBLIC_DOMAIN;
+				if (publicDomain) {
+					const baseUrl = publicDomain.startsWith("http")
+						? publicDomain
+						: `https://${publicDomain}`;
+					setImageUrl(`${baseUrl}/${key}`);
+					setLoading(false);
+					return;
+				}
+
+				// Fallback: Use presign API for R2 signed URL
 				const res = await fetch("/api/r2/presign", {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
@@ -171,6 +199,7 @@ export default function DownloadPage() {
 						<ImageIcon className="h-5 w-5" />
 					</div>
 
+					{/* biome-ignore lint/performance/noImgElement: Need native img for Canvas operations and CSS filters */}
 					<img
 						alt="Preview"
 						className="relative z-10 max-h-[70vh] max-w-full object-contain shadow-2xl"
@@ -183,20 +212,26 @@ export default function DownloadPage() {
 
 				{/* Zoom Modal (Lightbox) */}
 				{isZoomed && (
-					<button
-						className="fade-in fixed inset-0 z-50 flex animate-in cursor-zoom-out items-center justify-center bg-black/95 backdrop-blur-md duration-200"
+					// biome-ignore lint/a11y/useSemanticElements: Modal overlay with scroll support
+					<div
+						className="fade-in fixed inset-0 z-50 animate-in cursor-zoom-out overflow-auto bg-black/95 backdrop-blur-md duration-200"
 						onClick={() => setIsZoomed(false)}
 						onKeyDown={(e) => e.key === "Escape" && setIsZoomed(false)}
-						type="button"
+						ref={zoomModalRef}
+						role="button"
+						tabIndex={0}
 					>
-						<img
-							alt="Zoomed Preview"
-							className="max-h-[95vh] max-w-[95vw] object-contain shadow-2xl transition-all duration-300"
-							crossOrigin="anonymous"
-							src={imageUrl || ""}
-							style={filterStyle}
-						/>
-					</button>
+						<div className="flex min-h-full w-full items-center justify-center p-4">
+							{/* biome-ignore lint/performance/noImgElement: Need native img for CSS filters */}
+							<img
+								alt="Zoomed Preview"
+								className="max-w-[95vw] object-contain shadow-2xl transition-all duration-300"
+								crossOrigin="anonymous"
+								src={imageUrl || ""}
+								style={filterStyle}
+							/>
+						</div>
+					</div>
 				)}
 
 				{/* Toolbar */}
@@ -247,7 +282,7 @@ export default function DownloadPage() {
 
 					{/* Download Original */}
 					<button
-						className="hidden items-center gap-2 rounded-xl border border-slate-700 bg-transparent px-4 py-3 font-medium text-slate-300 transition-colors hover:border-slate-600 hover:bg-slate-800 md:flex"
+						className="flex items-center gap-2 rounded-xl border border-slate-700 bg-transparent px-4 py-3 font-medium text-slate-300 transition-colors hover:border-slate-600 hover:bg-slate-800"
 						onClick={handleDownloadOriginal}
 						type="button"
 					>
