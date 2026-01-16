@@ -12,7 +12,6 @@ import {
 	QrCode,
 	Trash2,
 	Upload,
-	Wifi,
 	X,
 	Zap,
 } from "lucide-react";
@@ -21,7 +20,7 @@ import Head from "next/head";
 import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
 import { QRCodeSVG } from "qrcode.react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import QrScanner from "@/components/QrScanner";
 import { MAX_UPLOAD_SIZE } from "@/config/constants";
@@ -167,66 +166,69 @@ export default function Home() {
 	};
 
 	// Upload Logic (Abstracted)
-	const continueUpload = async (file: File, password?: string) => {
-		setIsUploading(true);
-		try {
-			// 2. Get Presigned PUT URL
-			const headers: Record<string, string> = {
-				"Content-Type": "application/json",
-			};
-			if (password) {
-				headers["x-access-password"] = password;
-			}
+	const continueUpload = useCallback(
+		async (file: File, password?: string) => {
+			setIsUploading(true);
+			try {
+				// 2. Get Presigned PUT URL
+				const headers: Record<string, string> = {
+					"Content-Type": "application/json",
+				};
+				if (password) {
+					headers["x-access-password"] = password;
+				}
 
-			const putRes = await fetch("/api/r2/presign", {
-				method: "POST",
-				headers,
-				body: JSON.stringify({
-					action: "put",
-					key: file.name,
-					contentType: file.type,
-					size: file.size,
-				}),
-			});
+				const putRes = await fetch("/api/r2/presign", {
+					method: "POST",
+					headers,
+					body: JSON.stringify({
+						action: "put",
+						key: file.name,
+						contentType: file.type,
+						size: file.size,
+					}),
+				});
 
-			if (putRes.status === 401) {
-				// Password invalid or missing during request
-				localStorage.removeItem("access_password"); // Clear invalid password
-				pendingFileRef.current = file; // Re-queue file
-				setShowPasswordModal(true); // Ask again
+				if (putRes.status === 401) {
+					// Password invalid or missing during request
+					localStorage.removeItem("access_password"); // Clear invalid password
+					pendingFileRef.current = file; // Re-queue file
+					setShowPasswordModal(true); // Ask again
+					setIsUploading(false);
+					return;
+				}
+
+				if (!putRes.ok) throw new Error("Failed to get upload URL");
+				const { url: putUrl, key } = await putRes.json();
+
+				// 2. Upload to R2
+				const uploadRes = await fetch(putUrl, {
+					method: "PUT",
+					body: file,
+					headers: { "Content-Type": file.type },
+				});
+				if (!uploadRes.ok) throw new Error("Upload to R2 failed");
+
+				// 3. Generate QR Code Value - Directly construct R2 public URL
+				const publicDomain = env.NEXT_PUBLIC_R2_PUBLIC_DOMAIN;
+				if (!publicDomain) throw new Error("R2 public domain not configured");
+				const baseUrl = publicDomain.startsWith("http")
+					? publicDomain
+					: `https://${publicDomain}`;
+				const finalQrValue = `${baseUrl}/${key}`;
+
+				setGeneratedQrValue(finalQrValue);
+				setInputUrl(finalQrValue);
+				pendingFileRef.current = null; // Clear pending file on success
+			} catch (err) {
+				console.error("Upload failed", err);
+				toast.error(t("toastUploadFailed"));
+			} finally {
 				setIsUploading(false);
-				return;
 			}
-
-			if (!putRes.ok) throw new Error("Failed to get upload URL");
-			const { url: putUrl, key } = await putRes.json();
-
-			// 2. Upload to R2
-			const uploadRes = await fetch(putUrl, {
-				method: "PUT",
-				body: file,
-				headers: { "Content-Type": file.type },
-			});
-			if (!uploadRes.ok) throw new Error("Upload to R2 failed");
-
-			// 3. Generate QR Code Value - Directly construct R2 public URL
-			const publicDomain = env.NEXT_PUBLIC_R2_PUBLIC_DOMAIN;
-			if (!publicDomain) throw new Error("R2 public domain not configured");
-			const baseUrl = publicDomain.startsWith("http")
-				? publicDomain
-				: `https://${publicDomain}`;
-			const finalQrValue = `${baseUrl}/${key}`;
-
-			setGeneratedQrValue(finalQrValue);
-			setInputUrl(finalQrValue);
-			pendingFileRef.current = null; // Clear pending file on success
-		} catch (err) {
-			console.error("Upload failed", err);
-			toast.error(t("toastUploadFailed"));
-		} finally {
-			setIsUploading(false);
-		}
-	};
+		},
+		[t],
+	);
 
 	const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
@@ -299,6 +301,50 @@ export default function Home() {
 			setShowPasswordModal(true);
 		}
 	};
+
+	// Listen for paste events when Generate tab is active (Ctrl+V for images)
+	useEffect(() => {
+		if (activeTab !== "generate") return;
+
+		const handlePaste = async (e: ClipboardEvent) => {
+			const items = e.clipboardData?.items;
+			if (!items) return;
+
+			for (const item of items) {
+				if (item.type.startsWith("image/")) {
+					e.preventDefault();
+					const file = item.getAsFile();
+					if (file) {
+						// Size Check
+						if (file.size > MAX_UPLOAD_SIZE) {
+							toast.error(t("toastFileSizeLimit"));
+							return;
+						}
+
+						// Generate a filename with timestamp
+						const ext = item.type.split("/")[1] || "png";
+						const namedFile = new File([file], `paste-${Date.now()}.${ext}`, {
+							type: file.type,
+						});
+
+						// Check Password and upload
+						const storedPwd = localStorage.getItem("access_password");
+						if (storedPwd) {
+							await continueUpload(namedFile, storedPwd);
+						} else {
+							// No password, open modal
+							pendingFileRef.current = namedFile;
+							setShowPasswordModal(true);
+						}
+					}
+					break;
+				}
+			}
+		};
+
+		document.addEventListener("paste", handlePaste);
+		return () => document.removeEventListener("paste", handlePaste);
+	}, [activeTab, continueUpload, t]);
 
 	// Download Logic
 	const downloadQrCode = () => {
@@ -772,19 +818,6 @@ export default function Home() {
 												</p>
 											</div>
 										</div>
-										<div className="flex gap-4">
-											<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-orange-50 text-orange-600">
-												<Wifi className="h-6 w-6" />
-											</div>
-											<div>
-												<h3 className="font-bold text-slate-800">
-													{t("guideShareTitle")}
-												</h3>
-												<p className="mt-1 text-slate-500 text-sm leading-relaxed">
-													{t("guideShareDesc")}
-												</p>
-											</div>
-										</div>
 									</div>
 								) : (
 									<div className="flex flex-col gap-6">
@@ -797,75 +830,61 @@ export default function Home() {
 											</p>
 										</div>
 
-										<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-											{/* Card 1: Scan Helper */}
-											<div className="group relative flex flex-col rounded-3xl border border-blue-100 bg-blue-50/30 p-5 transition-all hover:bg-blue-50">
-												<div className="mb-4 flex items-start justify-between">
-													<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-blue-600 shadow-sm ring-1 ring-blue-100">
-														<Camera className="h-5 w-5" />
+										{/* Unified Shortcut Card */}
+										<div className="group relative flex flex-col overflow-hidden rounded-3xl border border-indigo-100 bg-gradient-to-br from-indigo-50/50 to-purple-50/50 p-6 transition-all hover:shadow-lg">
+											<div className="mb-6 flex flex-col gap-4 sm:flex-row">
+												{/* Feature 1: Share Trigger */}
+												<div className="flex-1 rounded-2xl bg-white/60 p-4 shadow-sm ring-1 ring-black/5">
+													<div className="mb-3 flex items-center gap-2">
+														<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
+															<Upload className="h-4 w-4" />
+														</div>
+														<span className="font-bold text-slate-700 text-sm">
+															{t("shortcut1Title")}
+														</span>
 													</div>
-													<div className="rounded-full bg-blue-100 px-2 py-1 font-bold text-[10px] text-blue-600">
-														{t("shortcut1Title")}
-													</div>
+													<p className="text-slate-500 text-xs leading-relaxed">
+														{t("shortcut1Desc")}
+													</p>
 												</div>
-												<h4 className="mb-1 font-bold text-slate-800">
-													{t("shortcut1Sub")}
-												</h4>
-												<p className="mb-4 text-slate-500 text-xs leading-relaxed">
-													{t("shortcut1Desc")}
-												</p>
-												<div className="mt-auto flex flex-col items-center">
-													<div className="mb-3 rounded-xl border-2 border-white bg-white p-2 shadow-sm">
-														<QRCodeSVG
-															level="M"
-															size={120}
-															value="https://www.icloud.com/shortcuts/scan-example"
-														/>
+
+												{/* Feature 2: Manual Trigger */}
+												<div className="flex-1 rounded-2xl bg-white/60 p-4 shadow-sm ring-1 ring-black/5">
+													<div className="mb-3 flex items-center gap-2">
+														<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-100 text-purple-600">
+															<Zap className="h-4 w-4" />
+														</div>
+														<span className="font-bold text-slate-700 text-sm">
+															{t("shortcut2Title")}
+														</span>
 													</div>
-													<a
-														className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-2.5 font-bold text-white text-xs shadow-blue-500/20 shadow-lg transition-all hover:bg-blue-700 active:scale-95"
-														href="https://www.icloud.com/shortcuts/scan-example"
-														rel="noopener noreferrer"
-														target="_blank"
-													>
-														<Zap className="h-3.5 w-3.5 fill-white" />
-														{t("getShortcut")}
-													</a>
+													<p className="text-slate-500 text-xs leading-relaxed">
+														{t("shortcut2Desc")}
+													</p>
 												</div>
 											</div>
 
-											{/* Card 2: Generate Helper */}
-											<div className="group relative flex flex-col rounded-3xl border border-purple-100 bg-purple-50/30 p-5 transition-all hover:bg-purple-50">
-												<div className="mb-4 flex items-start justify-between">
-													<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-purple-600 shadow-sm ring-1 ring-purple-100">
-														<QrCode className="h-5 w-5" />
-													</div>
-													<div className="rounded-full bg-purple-100 px-2 py-1 font-bold text-[10px] text-purple-600">
-														{t("shortcut2Title")}
-													</div>
+											{/* QR Code & Action */}
+											<div className="flex flex-col items-center gap-4 border-slate-200/50 border-t pt-6">
+												<div className="rounded-xl border-4 border-white bg-white p-2 shadow-sm">
+													<QRCodeSVG
+														level="M"
+														size={140}
+														value="https://www.icloud.com/shortcuts/example-unified-workflow"
+													/>
 												</div>
-												<h4 className="mb-1 font-bold text-slate-800">
-													{t("shortcut2Sub")}
-												</h4>
-												<p className="mb-4 text-slate-500 text-xs leading-relaxed">
-													{t("shortcut2Desc")}
-												</p>
-												<div className="mt-auto flex flex-col items-center">
-													<div className="mb-3 rounded-xl border-2 border-white bg-white p-2 shadow-sm">
-														<QRCodeSVG
-															level="M"
-															size={120}
-															value="https://www.icloud.com/shortcuts/gen-example"
-														/>
-													</div>
+												<div className="text-center">
+													<p className="mb-3 font-medium text-slate-500 text-xs">
+														{t("getShortcut")}
+													</p>
 													<a
-														className="flex w-full items-center justify-center gap-2 rounded-xl bg-purple-600 py-2.5 font-bold text-white text-xs shadow-lg shadow-purple-500/20 transition-all hover:bg-purple-700 active:scale-95"
-														href="https://www.icloud.com/shortcuts/gen-example"
+														className="flex items-center gap-2 rounded-full bg-slate-900 px-6 py-2.5 font-bold text-sm text-white shadow-xl transition-all hover:scale-105 hover:bg-slate-800 active:scale-95"
+														href="https://www.icloud.com/shortcuts/example-unified-workflow"
 														rel="noopener noreferrer"
 														target="_blank"
 													>
-														<Zap className="h-3.5 w-3.5 fill-white" />
-														{t("getShortcut")}
+														<Zap className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+														<span>Download Workflow</span>
 													</a>
 												</div>
 											</div>
