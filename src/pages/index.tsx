@@ -69,19 +69,22 @@ export default function Home() {
 		};
 	}, [showHelpModal]);
 
-	// Extract URL from text (can be at beginning, middle, or end)
-	const extractUrl = (text: string): string | null => {
+	// Extract ALL URLs from text
+	const extractAllUrls = (text: string): string[] => {
 		// Match http:// or https:// URLs, stopping at whitespace or common URL terminators
-		const urlPattern = /https?:\/\/[^\s<>"{}|\\^`[\]]+/gi;
+		const urlPattern =
+			/https?:\/\/[^\s\n\r\t<>"{}|\\^\x60[\]\uff0c\u3002\uff01\uff1f\u3001\uff1b\uff1a\u201c\u201d\u2018\u2019\u3010\u3011\uff08\uff09]+/gi;
 		const matches = text.match(urlPattern);
 		if (matches && matches.length > 0) {
-			// Clean up trailing punctuation that might be part of surrounding text
-			let url = matches[0];
-			// Remove trailing punctuation that's likely not part of the URL
-			url = url.replace(/[.,;:!?)]+$/, "");
-			return url;
+			return matches.map((url) => url.replace(/[.,;:!?)]+$/, ""));
 		}
-		return null;
+		return [];
+	};
+
+	// Extract URL from text (can be at beginning, middle, or end)
+	const extractUrl = (text: string): string | null => {
+		const urls = extractAllUrls(text);
+		return urls[0] ?? null;
 	};
 
 	// Detect if text contains a URL
@@ -161,6 +164,65 @@ export default function Home() {
 	};
 
 	const clearHistory = () => setScanHistory([]);
+
+	// Render content with ALL URLs highlighted as clickable links
+	const renderContentWithUrl = (content: string, _extractedUrl?: string) => {
+		const urls = extractAllUrls(content);
+
+		if (urls.length === 0) {
+			return (
+				<p className="break-all font-medium text-slate-800 text-sm leading-relaxed">
+					{content}
+				</p>
+			);
+		}
+
+		// Build segments: alternating between text and URLs
+		const segments: { type: "text" | "url"; content: string }[] = [];
+		let remaining = content;
+
+		for (const url of urls) {
+			const urlIndex = remaining.indexOf(url);
+			if (urlIndex === -1) continue;
+
+			if (urlIndex > 0) {
+				segments.push({
+					type: "text",
+					content: remaining.substring(0, urlIndex),
+				});
+			}
+			segments.push({ type: "url", content: url });
+			remaining = remaining.substring(urlIndex + url.length);
+		}
+		if (remaining) {
+			segments.push({ type: "text", content: remaining });
+		}
+
+		return (
+			<p className="break-all font-medium text-sm leading-relaxed">
+				{segments.map((seg) =>
+					seg.type === "url" ? (
+						<a
+							className="text-indigo-600 hover:underline"
+							href={seg.content}
+							key={`url-${seg.content}`}
+							rel="noopener noreferrer"
+							target="_blank"
+						>
+							{seg.content}
+						</a>
+					) : (
+						<span
+							className="text-slate-800"
+							key={`text-${seg.content.slice(0, 20)}`}
+						>
+							{seg.content}
+						</span>
+					),
+				)}
+			</p>
+		);
+	};
 
 	const handleCopyItem = async (content: string, id: string) => {
 		try {
@@ -662,19 +724,9 @@ export default function Home() {
 																	{item.timestamp.toLocaleTimeString()}
 																</span>
 															</div>
-															{item.isUrl && item.extractedUrl ? (
-																<a
-																	className="break-all font-medium text-indigo-600 text-sm leading-relaxed hover:underline"
-																	href={item.extractedUrl}
-																	rel="noopener noreferrer"
-																	target="_blank"
-																>
-																	{item.content}
-																</a>
-															) : (
-																<p className="break-all font-medium text-slate-800 text-sm leading-relaxed">
-																	{item.content}
-																</p>
+															{renderContentWithUrl(
+																item.content,
+																item.extractedUrl,
 															)}
 														</div>
 														<div className="flex items-center justify-end gap-2 border-slate-100 border-t pt-2 opacity-0 transition-opacity group-hover:opacity-100">
