@@ -32,6 +32,7 @@ interface ScanHistoryItem {
 	content: string;
 	timestamp: Date;
 	isUrl: boolean;
+	extractedUrl?: string; // The URL extracted from content (may be embedded in text)
 	isR2Image?: boolean; // Whether the URL is an R2 image that can be edited
 	r2Key?: string; // The R2 object key extracted from URL
 }
@@ -68,14 +69,24 @@ export default function Home() {
 		};
 	}, [showHelpModal]);
 
-	// Detect URL
-	const isUrl = (text: string): boolean => {
-		try {
-			const url = new URL(text);
-			return url.protocol === "http:" || url.protocol === "https:";
-		} catch {
-			return false;
+	// Extract URL from text (can be at beginning, middle, or end)
+	const extractUrl = (text: string): string | null => {
+		// Match http:// or https:// URLs, stopping at whitespace or common URL terminators
+		const urlPattern = /https?:\/\/[^\s<>"{}|\\^`[\]]+/gi;
+		const matches = text.match(urlPattern);
+		if (matches && matches.length > 0) {
+			// Clean up trailing punctuation that might be part of surrounding text
+			let url = matches[0];
+			// Remove trailing punctuation that's likely not part of the URL
+			url = url.replace(/[.,;:!?)]+$/, "");
+			return url;
 		}
+		return null;
+	};
+
+	// Detect if text contains a URL
+	const _isUrl = (text: string): boolean => {
+		return extractUrl(text) !== null;
 	};
 
 	// R2 domain pattern for detecting project-generated URLs
@@ -106,18 +117,19 @@ export default function Home() {
 		decodedText: string,
 		_decodedResult: Html5QrcodeResult,
 	) => {
-		const itemIsUrl = isUrl(decodedText);
+		const extractedUrlValue = extractUrl(decodedText);
+		const itemIsUrl = extractedUrlValue !== null;
 		let isR2Image = false;
 		let r2Key: string | undefined;
 
 		// Check if it's an R2 URL and detect if it's an image
-		if (itemIsUrl) {
-			const extractedKey = extractR2Key(decodedText);
+		if (itemIsUrl && extractedUrlValue) {
+			const extractedKey = extractR2Key(extractedUrlValue);
 			if (extractedKey) {
 				r2Key = extractedKey;
 				try {
 					// Use HEAD request to get Content-Type without downloading the file
-					const response = await fetch(decodedText, { method: "HEAD" });
+					const response = await fetch(extractedUrlValue, { method: "HEAD" });
 					if (response.ok) {
 						const contentType = response.headers.get("Content-Type");
 						isR2Image = isImageContentType(contentType);
@@ -133,6 +145,7 @@ export default function Home() {
 			content: decodedText,
 			timestamp: new Date(),
 			isUrl: itemIsUrl,
+			extractedUrl: extractedUrlValue ?? undefined,
 			isR2Image,
 			r2Key,
 		};
@@ -649,10 +662,10 @@ export default function Home() {
 																	{item.timestamp.toLocaleTimeString()}
 																</span>
 															</div>
-															{item.isUrl ? (
+															{item.isUrl && item.extractedUrl ? (
 																<a
 																	className="break-all font-medium text-indigo-600 text-sm leading-relaxed hover:underline"
-																	href={item.content}
+																	href={item.extractedUrl}
 																	rel="noopener noreferrer"
 																	target="_blank"
 																>
@@ -686,10 +699,10 @@ export default function Home() {
 																	</>
 																)}
 															</button>
-															{item.isUrl && (
+															{item.isUrl && item.extractedUrl && (
 																<a
 																	className="flex items-center gap-1.5 rounded-md bg-indigo-50 px-2 py-1 font-bold text-indigo-600 text-xs transition-colors hover:bg-indigo-100"
-																	href={item.content}
+																	href={item.extractedUrl}
 																	rel="noopener noreferrer"
 																	target="_blank"
 																>
