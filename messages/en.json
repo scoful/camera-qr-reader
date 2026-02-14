@@ -77,6 +77,11 @@
 		"commonCancel": "Cancel",
 		"commonConfirm": "Confirm",
 		"commonClose": "Close",
-		"editImage": "Edit Image"
+		"editImage": "Edit Image",
+		"useShortCode": "Short Code",
+		"generateShortCode": "Generate Short Code",
+		"shortCodeTooltip": "Convert long content to a short link for cleaner QR codes",
+		"shorteningFailed": "Failed to generate short link",
+		"shortCodeResolved": "Short link resolved"
 	}
 }

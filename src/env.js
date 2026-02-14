@@ -14,6 +14,8 @@ export const env = createEnv({
 		R2_BUCKET_NAME: z.string(),
 		R2_PUBLIC_DOMAIN: z.string().optional(),
 		ACCESS_PASSWORD: z.string().optional(), // Optional to allow usage without password if desired, or strictly require it.
+		CF_KV_NAMESPACE_ID: z.string().optional(),
+		CF_KV_API_TOKEN: z.string().optional(),
 	},
 
 	/**
@@ -37,6 +39,8 @@ export const env = createEnv({
 		R2_BUCKET_NAME: process.env.R2_BUCKET_NAME,
 		R2_PUBLIC_DOMAIN: process.env.R2_PUBLIC_DOMAIN,
 		ACCESS_PASSWORD: process.env.ACCESS_PASSWORD,
+		CF_KV_NAMESPACE_ID: process.env.CF_KV_NAMESPACE_ID,
+		CF_KV_API_TOKEN: process.env.CF_KV_API_TOKEN,
 		NEXT_PUBLIC_R2_PUBLIC_DOMAIN: process.env.NEXT_PUBLIC_R2_PUBLIC_DOMAIN,
 	},
 	/**

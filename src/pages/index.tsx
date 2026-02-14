@@ -10,6 +10,7 @@ import {
 	Link as LinkIcon,
 	Lock,
 	QrCode,
+	Shrink,
 	Trash2,
 	Upload,
 	X,
@@ -35,6 +36,7 @@ interface ScanHistoryItem {
 	extractedUrl?: string; // The URL extracted from content (may be embedded in text)
 	isR2Image?: boolean; // Whether the URL is an R2 image that can be edited
 	r2Key?: string; // The R2 object key extracted from URL
+	shortCodeUrl?: string; // The short link URL this content was resolved from
 }
 
 export default function Home() {
@@ -50,6 +52,8 @@ export default function Home() {
 	const [copiedId, setCopiedId] = useState<string | null>(null);
 	const [showHelpModal, setShowHelpModal] = useState(false);
 	const [helpTab, setHelpTab] = useState<"guide" | "ios">("guide");
+	const [useShortCode, setUseShortCode] = useState(false);
+	const [isShortening, setIsShortening] = useState(false);
 
 	// Auth State
 	const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -120,6 +124,37 @@ export default function Home() {
 		decodedText: string,
 		_decodedResult: Html5QrcodeResult,
 	) => {
+		// Check if scanned content is a short link from this app
+		const shortCodeMatch = decodedText.match(/\/s\/([A-Za-z0-9]{4,20})$/);
+		if (shortCodeMatch) {
+			try {
+				const code = shortCodeMatch[1];
+				const res = await fetch(`/api/shorten?code=${code}`);
+				if (res.ok) {
+					const data = await res.json();
+					// Replace decoded text with the original content
+					const resolvedText = data.content as string;
+					const resolvedUrlValue = extractUrl(resolvedText);
+					const resolvedIsUrl = resolvedUrlValue !== null;
+
+					const newItem: ScanHistoryItem = {
+						id: Date.now().toString(),
+						content: resolvedText,
+						timestamp: new Date(),
+						isUrl: resolvedIsUrl,
+						extractedUrl: resolvedUrlValue ?? undefined,
+						shortCodeUrl: decodedText,
+					};
+					setScanHistory((prev) => [newItem, ...prev]);
+					setIsScanning(false);
+					toast.success(t("shortCodeResolved"));
+					return;
+				}
+			} catch (err) {
+				console.error("Failed to resolve short link:", err);
+			}
+		}
+
 		const extractedUrlValue = extractUrl(decodedText);
 		const itemIsUrl = extractedUrlValue !== null;
 		let isR2Image = false;
@@ -235,9 +270,56 @@ export default function Home() {
 	};
 
 	// Generate Logic
-	const handleGenerateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		setInputUrl(e.target.value);
-		setGeneratedQrValue(e.target.value);
+	const handleGenerateChange = async (
+		e: React.ChangeEvent<HTMLInputElement>,
+	) => {
+		const value = e.target.value;
+		setInputUrl(value);
+
+		if (useShortCode && value.length > 0) {
+			// Will be handled by the generate button or debounce
+			setGeneratedQrValue("");
+		} else {
+			setGeneratedQrValue(value);
+		}
+	};
+
+	const handleGenerateWithShortCode = async () => {
+		if (!inputUrl || isShortening) return;
+
+		const storedPwd = localStorage.getItem("access_password");
+		if (!storedPwd) {
+			setShowPasswordModal(true);
+			return;
+		}
+
+		setIsShortening(true);
+		try {
+			const res = await fetch("/api/shorten", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					"x-access-password": storedPwd,
+				},
+				body: JSON.stringify({ content: inputUrl }),
+			});
+
+			if (res.status === 401) {
+				localStorage.removeItem("access_password");
+				setShowPasswordModal(true);
+				setIsShortening(false);
+				return;
+			}
+
+			if (!res.ok) throw new Error("Shorten failed");
+			const { shortUrl } = await res.json();
+			setGeneratedQrValue(shortUrl);
+		} catch (err) {
+			console.error("Shorten failed:", err);
+			toast.error(t("shorteningFailed"));
+		} finally {
+			setIsShortening(false);
+		}
 	};
 
 	// Upload Logic (Abstracted)
@@ -586,6 +668,50 @@ export default function Home() {
 														value={inputUrl}
 													/>
 												</div>
+
+												{/* Short Code Toggle + Generate Button */}
+												<div className="flex items-center justify-between">
+													<label className="flex cursor-pointer items-center gap-2">
+														<div className="relative">
+															<input
+																checked={useShortCode}
+																className="peer sr-only"
+																onChange={(e) => {
+																	setUseShortCode(e.target.checked);
+																	if (!e.target.checked) {
+																		setGeneratedQrValue(inputUrl);
+																	} else {
+																		setGeneratedQrValue("");
+																	}
+																}}
+																type="checkbox"
+															/>
+															<div className="h-5 w-9 rounded-full bg-slate-200 transition-colors peer-checked:bg-indigo-600" />
+															<div className="absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform peer-checked:translate-x-4" />
+														</div>
+														<div className="flex items-center gap-1">
+															<Shrink className="h-3.5 w-3.5 text-slate-400" />
+															<span className="font-medium text-slate-600 text-xs">
+																{t("useShortCode")}
+															</span>
+														</div>
+													</label>
+													{useShortCode && (
+														<button
+															className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 font-semibold text-sm text-white shadow-sm transition-all hover:bg-indigo-700 disabled:opacity-50"
+															disabled={!inputUrl || isShortening}
+															onClick={handleGenerateWithShortCode}
+															type="button"
+														>
+															{isShortening ? (
+																<div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+															) : (
+																<Shrink className="h-3.5 w-3.5" />
+															)}
+															{t("generateShortCode")}
+														</button>
+													)}
+												</div>
 											</div>
 
 											<div className="relative flex items-center py-6">
@@ -672,6 +798,11 @@ export default function Home() {
 												</div>
 											)}
 										</div>
+										{generatedQrValue && generatedQrValue !== inputUrl && (
+											<p className="mb-4 max-w-[280px] break-all rounded-lg bg-slate-50 px-3 py-2 text-center font-mono text-slate-500 text-xs">
+												{generatedQrValue}
+											</p>
+										)}
 										<button
 											className="flex w-full max-w-[280px] items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3.5 font-bold text-white shadow-indigo-500/20 shadow-lg transition-all hover:bg-indigo-700 disabled:opacity-50 disabled:shadow-none"
 											disabled={!generatedQrValue}
@@ -727,6 +858,12 @@ export default function Home() {
 															{renderContentWithUrl(
 																item.content,
 																item.extractedUrl,
+															)}
+															{item.shortCodeUrl && (
+																<p className="mt-1 flex items-center gap-1 font-mono text-[10px] text-slate-400">
+																	<Shrink className="h-3 w-3" />
+																	{item.shortCodeUrl}
+																</p>
 															)}
 														</div>
 														<div className="flex items-center justify-end gap-2 border-slate-100 border-t pt-2 opacity-0 transition-opacity group-hover:opacity-100">

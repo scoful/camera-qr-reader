@@ -77,6 +77,11 @@
 		"commonCancel": "取消",
 		"commonConfirm": "确认",
 		"commonClose": "关闭",
-		"editImage": "编辑图片"
+		"editImage": "编辑图片",
+		"useShortCode": "短码",
+		"generateShortCode": "生成短码",
+		"shortCodeTooltip": "将长内容转为短链接，生成更清晰的二维码",
+		"shorteningFailed": "生成短链接失败",
+		"shortCodeResolved": "短链接已解析"
 	}
 }
