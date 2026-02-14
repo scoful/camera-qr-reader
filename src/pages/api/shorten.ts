@@ -19,6 +19,12 @@ export default async function handler(
 		// Create short link — requires password
 		if (env.ACCESS_PASSWORD) {
 			const authHeader = req.headers["x-access-password"];
+			console.log("[shorten] auth debug:", {
+				receivedLength: typeof authHeader === "string" ? authHeader.length : "missing",
+				receivedValue: typeof authHeader === "string" ? `${authHeader.slice(0, 2)}***${authHeader.slice(-2)}` : "undefined",
+				expectedLength: env.ACCESS_PASSWORD.length,
+				match: authHeader === env.ACCESS_PASSWORD,
+			});
 			if (authHeader !== env.ACCESS_PASSWORD) {
 				return res
 					.status(401)
