@@ -29,12 +29,9 @@ export default function QrScanner({
 	useEffect(() => {
 		// 使用hasRendered标记防止严格模式下的双重渲染
 		if (hasRendered.current) {
-			console.log("⚠️ 已渲染过，跳过");
 			return;
 		}
 		hasRendered.current = true;
-
-		console.log("🚀 初始化扫描器");
 
 		const scanner = new Html5QrcodeScanner(
 			"qr-reader",
@@ -63,7 +60,6 @@ export default function QrScanner({
 		// 暴露停止方法给父组件
 		const stopScanner = async () => {
 			if (scannerRef.current) {
-				console.log("🛑 停止扫描器");
 				await scannerRef.current.clear();
 				scannerRef.current = null;
 
@@ -79,7 +75,6 @@ export default function QrScanner({
 
 		scanner.render(
 			(decodedText, decodedResult) => {
-				console.log("✅ 扫码成功:", decodedText);
 				onScanSuccessRef.current?.(decodedText, decodedResult);
 				// 扫码成功后自动停止
 				stopScanner().catch(console.error);
@@ -91,7 +86,6 @@ export default function QrScanner({
 
 		// 清理函数
 		return () => {
-			console.log("🧹 清理扫描器");
 			hasRendered.current = false; // 重置标记，允许下次重新渲染
 			const currentScanner = scannerRef.current;
 			if (currentScanner) {

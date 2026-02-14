@@ -91,11 +91,6 @@ export default function Home() {
 		return urls[0] ?? null;
 	};
 
-	// Detect if text contains a URL
-	const _isUrl = (text: string): boolean => {
-		return extractUrl(text) !== null;
-	};
-
 	// R2 domain pattern for detecting project-generated URLs
 	const R2_DOMAIN = env.NEXT_PUBLIC_R2_PUBLIC_DOMAIN;
 
@@ -270,9 +265,7 @@ export default function Home() {
 	};
 
 	// Generate Logic
-	const handleGenerateChange = async (
-		e: React.ChangeEvent<HTMLInputElement>,
-	) => {
+	const handleGenerateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const value = e.target.value;
 		setInputUrl(value);
 
